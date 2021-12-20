@@ -37,6 +37,7 @@ class UserAddressesController extends Controller
     }
     public function update(UserAddress $user_address, UserAddressRequest $request)
     {
+        $this->authorize('own', $user_address);
         $user_address->update($request->only([
             'province',
             'city',
@@ -48,5 +49,12 @@ class UserAddressesController extends Controller
         ]));
 
         return redirect()->route('user_addresses.index');
+    }
+    public function destroy(UserAddress $user_address)
+    {
+        $this->authorize('own', $user_address);
+        $user_address->delete();
+        // 把之前的 redirect 改成返回空数组
+        return [];
     }
 }
