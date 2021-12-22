@@ -54,6 +54,7 @@ class PaymentController extends Controller
         }
         // 如果这笔订单的状态已经是已支付
         if ($order->paid_at) {
+            $this->afterPaid($order);
             // 返回数据给支付宝
             return app('alipay')->success();
         }
@@ -107,7 +108,11 @@ class PaymentController extends Controller
             'payment_method' => 'wechat',
             'payment_no'     => $data->transaction_id,
         ]);
-
+        $this->afterPaid($order);
         return app('wechat_pay')->success();
+    }
+    protected function afterPaid(Order $order)
+    {
+        event(new OrderPaid($order));
     }
 }
