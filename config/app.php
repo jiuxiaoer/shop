@@ -235,5 +235,5 @@ return [
         'View' => Illuminate\Support\Facades\View::class,
 
     ],
-
+    'ngrok_url' => env('NGROK_URL'),
 ];
