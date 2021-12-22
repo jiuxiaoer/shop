@@ -10,6 +10,7 @@ use App\Models\UserAddress;
 use App\Models\Order;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+
 class OrdersController extends Controller
 {
     public function index(Request $request) {
@@ -21,6 +22,11 @@ class OrdersController extends Controller
             ->paginate();
 
         return view('orders.index', ['orders' => $orders]);
+    }
+
+    public function show(Order $order, Request $request) {
+        $this->authorize('own', $order);
+        return view('orders.show', ['order' => $order->load(['items.productSku', 'items.product'])]);
     }
 
     public function store(OrderRequest $request) {
