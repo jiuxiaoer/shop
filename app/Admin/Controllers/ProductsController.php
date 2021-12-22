@@ -25,13 +25,17 @@ class ProductsController extends AdminController
     protected function grid()
     {
         $grid = new Grid(new Product);
-
         $grid->id('ID')->sortable();
-        $grid->title('商品名称');
-        $grid->on_sale('已上架')->display(function ($value) {
+        $grid->title('商品名称')->filter('like');
+        $grid->image('图片')->image('', 100, 100);
+        $grid->on_sale('已上架')->filter([
+            0 => '下架',
+            1 => '上架',
+
+        ])->display(function ($value) {
             return $value ? '是' : '否';
         });
-        $grid->price('价格');
+        $grid->price('价格')->filter('range')->setAttributes(['style' => 'text-align:center;']);
         $grid->rating('评分');
         $grid->sold_count('销量');
         $grid->review_count('评论数');
@@ -45,6 +49,20 @@ class ProductsController extends AdminController
             $tools->batch(function ($batch) {
                 $batch->disableDelete();
             });
+        });
+        $grid->filter(function($filter){
+            // 去掉默认的id过滤器
+            $filter->disableIdFilter();
+            // 在这里添加字段过滤器
+            $filter->like('title', '商品名称');
+            $filter->between('created_at', '创建时间')->datetime();
+            $filter->gt('sold_count', '销量')->integer();
+
+            $filter->equal('on_sale','是否上架')->radio([
+                ''   => '全部',
+                0    => '下架',
+                1    => '上架',
+            ]);
         });
 
         return $grid;
