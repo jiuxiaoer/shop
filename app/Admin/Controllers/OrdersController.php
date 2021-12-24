@@ -48,7 +48,26 @@ class OrdersController extends AdminController
                 $batch->disableDelete();
             });
         });
+        $grid->filter(function($filter){
+            // 去掉默认的id过滤器
+            $filter->disableIdFilter();
+            // 在这里添加字段过滤器
+            $filter->equal('no', '订单号');
+            $filter->between('paid_at', '创建时间')->datetime();
+            $filter->between('total_amount', '订单金额');
 
+            $filter->equal('payment_method','支付方式')->radio([
+                'alipay'    => '支付宝',
+                'wechat'    => '微信',
+            ]);
+            $filter->equal('refund_status','退款状态')->radio(
+                Order::$refundStatusMap
+            );
+            $filter->equal('ship_status','物流状态')->radio(
+                Order::$shipStatusMap
+            );
+
+        });
         return $grid;
     }
 
