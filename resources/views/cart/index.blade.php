@@ -69,21 +69,10 @@
                   <textarea name="remark" class="form-control" rows="3"></textarea>
                 </div>
               </div>
-              <div class="form-group">
-                <div class="offset-sm-3 col-sm-3">
-                  <button type="button" class="btn btn-primary btn-create-order">提交订单</button>
-                </div>
-              </div>
             </form>
           </div>
           <!-- 结束 -->
 
-          <div class="form-group row">
-            <label class="col-form-label col-sm-3 text-md-right">备注</label>
-            <div class="col-sm-9 col-md-7">
-              <textarea name="remark" class="form-control" rows="3"></textarea>
-            </div>
-          </div>
           <!-- 优惠码开始 -->
           <div class="form-group row">
             <label class="col-form-label col-sm-3 text-md-right">优惠码</label>
@@ -153,6 +142,7 @@
           address_id: $('#order-form').find('select[name=address]').val(),
           items: [],
           remark: $('#order-form').find('textarea[name=remark]').val(),
+          coupon_code: $('input[name=coupon_code]').val(), // 从优惠码输入框中获取优惠码
         };
         // 遍历 <table> 标签内所有带有 data-id 属性的 <tr> 标签，也就是每一个购物车中的商品 SKU
         $('table tr[data-id]').each(function () {
