@@ -29,4 +29,11 @@ Route::group([
     $router->get('coupon_codes/{id}/edit', 'CouponCodesController@edit');
     $router->put('coupon_codes/{id}', 'CouponCodesController@update');
     $router->delete('coupon_codes/{id}', 'CouponCodesController@destroy');
+
+    $router->get('configs', 'ConfigsController@index');
+    $router->post('configs', 'ConfigsController@store');
+    $router->get('configs/create', 'ConfigsController@create');
+    $router->get('configs/{id}/edit', 'ConfigsController@edit');
+    $router->put('configs/{id}', 'ConfigsController@update');
+    $router->delete('configs/{id}', 'ConfigsController@destroy');
 });
