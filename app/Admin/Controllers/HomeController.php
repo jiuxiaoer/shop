@@ -15,19 +15,19 @@ class HomeController extends Controller
         return $content
             ->title('Dashboard')
             ->description('Description...')
-            ->row(Dashboard::title())
+            ->row(view('admin.index.title'))
             ->row(function (Row $row) {
 
                 $row->column(4, function (Column $column) {
-                    $column->append(Dashboard::environment());
+                    $column->append(view('admin.index.left'));
                 });
 
                 $row->column(4, function (Column $column) {
-                    $column->append(Dashboard::extensions());
+                    $column->append(view('admin.index.center'));
                 });
 
                 $row->column(4, function (Column $column) {
-                    $column->append(Dashboard::dependencies());
+                    $column->append(view('admin.index.right'));
                 });
             });
     }
