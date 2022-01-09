@@ -19,92 +19,148 @@ class AdminTablesSeeder extends Seeder
         \Encore\Admin\Auth\Database\Menu::insert(
             [
                 [
-                    "icon" => "fa-bar-chart",
+                    "parent_id" => 0,
                     "order" => 1,
-                    "parent_id" => 0,
-                    "permission" => NULL,
                     "title" => "首页",
-                    "uri" => "/"
+                    "icon" => "fa-bar-chart",
+                    "uri" => "/",
+                    "permission" => NULL
                 ],
                 [
-                    "icon" => "fa-tasks",
-                    "order" => 6,
                     "parent_id" => 0,
-                    "permission" => NULL,
+                    "order" => 13,
                     "title" => "系统管理",
-                    "uri" => NULL
+                    "icon" => "fa-tasks",
+                    "uri" => NULL,
+                    "permission" => NULL
                 ],
                 [
-                    "icon" => "fa-users",
-                    "order" => 7,
                     "parent_id" => 2,
-                    "permission" => NULL,
+                    "order" => 14,
                     "title" => "管理员",
-                    "uri" => "auth/users"
+                    "icon" => "fa-users",
+                    "uri" => "auth/users",
+                    "permission" => NULL
                 ],
                 [
-                    "icon" => "fa-user",
-                    "order" => 8,
                     "parent_id" => 2,
-                    "permission" => NULL,
+                    "order" => 15,
                     "title" => "角色",
-                    "uri" => "auth/roles"
-                ],
-                [
-                    "icon" => "fa-ban",
-                    "order" => 9,
-                    "parent_id" => 2,
-                    "permission" => NULL,
-                    "title" => "权限",
-                    "uri" => "auth/permissions"
-                ],
-                [
-                    "icon" => "fa-bars",
-                    "order" => 10,
-                    "parent_id" => 2,
-                    "permission" => NULL,
-                    "title" => "菜单",
-                    "uri" => "auth/menu"
-                ],
-                [
-                    "icon" => "fa-history",
-                    "order" => 11,
-                    "parent_id" => 2,
-                    "permission" => NULL,
-                    "title" => "操作日志",
-                    "uri" => "auth/logs"
-                ],
-                [
                     "icon" => "fa-user",
+                    "uri" => "auth/roles",
+                    "permission" => NULL
+                ],
+                [
+                    "parent_id" => 2,
+                    "order" => 16,
+                    "title" => "权限",
+                    "icon" => "fa-ban",
+                    "uri" => "auth/permissions",
+                    "permission" => NULL
+                ],
+                [
+                    "parent_id" => 2,
+                    "order" => 17,
+                    "title" => "菜单",
+                    "icon" => "fa-bars",
+                    "uri" => "auth/menu",
+                    "permission" => NULL
+                ],
+                [
+                    "parent_id" => 2,
+                    "order" => 18,
+                    "title" => "操作日志",
+                    "icon" => "fa-history",
+                    "uri" => "auth/logs",
+                    "permission" => NULL
+                ],
+                [
+                    "parent_id" => 0,
                     "order" => 2,
-                    "parent_id" => 0,
-                    "permission" => NULL,
                     "title" => "用户管理",
-                    "uri" => "/users"
+                    "icon" => "fa-user",
+                    "uri" => "/users",
+                    "permission" => NULL
                 ],
                 [
-                    "icon" => "fa-cubes",
+                    "parent_id" => 0,
                     "order" => 3,
-                    "parent_id" => 0,
-                    "permission" => NULL,
                     "title" => "商品管理",
-                    "uri" => "/products"
+                    "icon" => "fa-cubes",
+                    "uri" => "/products",
+                    "permission" => NULL
                 ],
                 [
-                    "icon" => "fa-rmb",
+                    "parent_id" => 0,
                     "order" => 4,
-                    "parent_id" => 0,
-                    "permission" => NULL,
                     "title" => "订单管理",
-                    "uri" => "/orders"
+                    "icon" => "fa-rmb",
+                    "uri" => "/orders",
+                    "permission" => NULL
                 ],
                 [
-                    "icon" => "fa-tags",
-                    "order" => 5,
                     "parent_id" => 0,
-                    "permission" => NULL,
+                    "order" => 5,
                     "title" => "优惠券管理",
-                    "uri" => "/coupon_codes"
+                    "icon" => "fa-tags",
+                    "uri" => "/coupon_codes",
+                    "permission" => NULL
+                ],
+                [
+                    "parent_id" => 0,
+                    "order" => 7,
+                    "title" => "系统配置",
+                    "icon" => "fa-cogs",
+                    "uri" => "/configs",
+                    "permission" => NULL
+                ],
+                [
+                    "parent_id" => 0,
+                    "order" => 6,
+                    "title" => "定时任务",
+                    "icon" => "fa-clock-o",
+                    "uri" => "scheduling",
+                    "permission" => NULL
+                ],
+                [
+                    "parent_id" => 0,
+                    "order" => 8,
+                    "title" => "开发辅助",
+                    "icon" => "fa-gears",
+                    "uri" => NULL,
+                    "permission" => NULL
+                ],
+                [
+                    "parent_id" => 14,
+                    "order" => 9,
+                    "title" => "Scaffold",
+                    "icon" => "fa-keyboard-o",
+                    "uri" => "helpers/scaffold",
+                    "permission" => NULL
+                ],
+                [
+                    "parent_id" => 14,
+                    "order" => 10,
+                    "title" => "Database terminal",
+                    "icon" => "fa-database",
+                    "uri" => "helpers/terminal/database",
+                    "permission" => NULL
+                ],
+                [
+                    "parent_id" => 14,
+                    "order" => 11,
+                    "title" => "Laravel artisan",
+                    "icon" => "fa-terminal",
+                    "uri" => "helpers/terminal/artisan",
+                    "permission" => NULL
+                ],
+                [
+                    "parent_id" => 14,
+                    "order" => 12,
+                    "title" => "Routes",
+                    "icon" => "fa-list-alt",
+                    "uri" => "helpers/routes",
+                    "permission" => NULL
                 ]
             ]
         );
@@ -113,58 +169,70 @@ class AdminTablesSeeder extends Seeder
         \Encore\Admin\Auth\Database\Permission::insert(
             [
                 [
-                    "http_method" => "",
-                    "http_path" => "*",
                     "name" => "All permission",
-                    "slug" => "*"
+                    "slug" => "*",
+                    "http_method" => "",
+                    "http_path" => "*"
                 ],
                 [
-                    "http_method" => "GET",
-                    "http_path" => "/",
                     "name" => "Dashboard",
-                    "slug" => "dashboard"
+                    "slug" => "dashboard",
+                    "http_method" => "GET",
+                    "http_path" => "/"
                 ],
                 [
-                    "http_method" => "",
-                    "http_path" => "/auth/login\r\n/auth/logout",
                     "name" => "Login",
-                    "slug" => "auth.login"
+                    "slug" => "auth.login",
+                    "http_method" => "",
+                    "http_path" => "/auth/login\r\n/auth/logout"
                 ],
                 [
-                    "http_method" => "GET,PUT",
-                    "http_path" => "/auth/setting",
                     "name" => "User setting",
-                    "slug" => "auth.setting"
+                    "slug" => "auth.setting",
+                    "http_method" => "GET,PUT",
+                    "http_path" => "/auth/setting"
                 ],
                 [
-                    "http_method" => "",
-                    "http_path" => "/auth/roles\r\n/auth/permissions\r\n/auth/menu\r\n/auth/logs",
                     "name" => "Auth management",
-                    "slug" => "auth.management"
+                    "slug" => "auth.management",
+                    "http_method" => "",
+                    "http_path" => "/auth/roles\r\n/auth/permissions\r\n/auth/menu\r\n/auth/logs"
                 ],
                 [
-                    "http_method" => "",
-                    "http_path" => "/users*",
                     "name" => "用户管理",
-                    "slug" => "users"
+                    "slug" => "users",
+                    "http_method" => "",
+                    "http_path" => "/users*"
                 ],
                 [
-                    "http_method" => "",
-                    "http_path" => "/products*",
                     "name" => "商品管理",
-                    "slug" => "products"
+                    "slug" => "products",
+                    "http_method" => "",
+                    "http_path" => "/products*"
                 ],
                 [
-                    "http_method" => "",
-                    "http_path" => "/coupon_codes*",
                     "name" => "优惠券管理",
-                    "slug" => "coupon_codes"
+                    "slug" => "coupon_codes",
+                    "http_method" => "",
+                    "http_path" => "/coupon_codes*"
                 ],
                 [
-                    "http_method" => "",
-                    "http_path" => "/orders*",
                     "name" => "订单管理",
-                    "slug" => "orders"
+                    "slug" => "orders",
+                    "http_method" => "",
+                    "http_path" => "/orders*"
+                ],
+                [
+                    "name" => "Scheduling",
+                    "slug" => "ext.scheduling",
+                    "http_method" => "",
+                    "http_path" => "/scheduling*"
+                ],
+                [
+                    "name" => "Admin helpers",
+                    "slug" => "ext.helpers",
+                    "http_method" => "",
+                    "http_path" => "/helpers/*"
                 ]
             ]
         );
@@ -188,8 +256,8 @@ class AdminTablesSeeder extends Seeder
         DB::table('admin_role_menu')->insert(
             [
                 [
-                    "menu_id" => 2,
-                    "role_id" => 1
+                    "role_id" => 1,
+                    "menu_id" => 2
                 ]
             ]
         );
@@ -198,36 +266,36 @@ class AdminTablesSeeder extends Seeder
         DB::table('admin_role_permissions')->insert(
             [
                 [
-                    "permission_id" => 1,
-                    "role_id" => 1
+                    "role_id" => 1,
+                    "permission_id" => 1
                 ],
                 [
-                    "permission_id" => 2,
-                    "role_id" => 2
+                    "role_id" => 2,
+                    "permission_id" => 2
                 ],
                 [
-                    "permission_id" => 3,
-                    "role_id" => 2
+                    "role_id" => 2,
+                    "permission_id" => 3
                 ],
                 [
-                    "permission_id" => 4,
-                    "role_id" => 2
+                    "role_id" => 2,
+                    "permission_id" => 4
                 ],
                 [
-                    "permission_id" => 6,
-                    "role_id" => 2
+                    "role_id" => 2,
+                    "permission_id" => 6
                 ],
                 [
-                    "permission_id" => 8,
-                    "role_id" => 2
+                    "role_id" => 2,
+                    "permission_id" => 8
                 ],
                 [
-                    "permission_id" => 9,
-                    "role_id" => 2
+                    "role_id" => 2,
+                    "permission_id" => 9
                 ],
                 [
-                    "permission_id" => 10,
-                    "role_id" => 2
+                    "role_id" => 2,
+                    "permission_id" => 10
                 ]
             ]
         );
