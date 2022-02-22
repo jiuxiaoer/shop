@@ -2,6 +2,7 @@
 
 namespace App\Admin\Controllers;
 
+use App\Models\Category;
 use App\Models\Product;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Form;
@@ -27,6 +28,8 @@ class ProductsController extends AdminController
         $grid = new Grid(new Product);
         $grid->id('ID')->sortable();
         $grid->title('商品名称')->filter('like');
+        // Laravel-Admin 支持用符号 . 来展示关联关系的字段
+        $grid->column('category.name', '类目');
         $grid->image('图片')->image('', 100, 100);
         $grid->on_sale('已上架')->filter([
             0 => '下架',
@@ -42,14 +45,14 @@ class ProductsController extends AdminController
 
         $grid->actions(function ($actions) {
             $actions->disableView();
-            $actions->disableDelete();
+//            $actions->disableDelete();
         });
-        $grid->tools(function ($tools) {
-            // 禁用批量删除按钮
-            $tools->batch(function ($batch) {
-                $batch->disableDelete();
-            });
-        });
+//        $grid->tools(function ($tools) {
+//            // 禁用批量删除按钮
+//            $tools->batch(function ($batch) {
+//                $batch->disableDelete();
+//            });
+//        });
         $grid->filter(function($filter){
             // 去掉默认的id过滤器
             $filter->disableIdFilter();
@@ -81,7 +84,13 @@ class ProductsController extends AdminController
 
         // 创建一个输入框，第一个参数 title 是模型的字段名，第二个参数是该字段描述
         $form->text('title', '商品名称')->rules('required');
-
+        // 添加一个类目字段，与之前类目管理类似，使用 Ajax 的方式来搜索添加
+        $form->select('category_id', '类目')->options(function ($id) {
+            $category = Category::find($id);
+            if ($category) {
+                return [$category->id => $category->full_name];
+            }
+        })->ajax('/admin/api/categories?is_directory=0');
         // 创建一个选择图片的框
         $form->image('image', '封面图片')->rules('required|image');
 
