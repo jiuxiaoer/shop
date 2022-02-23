@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 
 class ProductsController extends Controller
 {
-    public function index(Request $request, CategoryService $categoryService) {
+    public function index(Request $request) {
         // 创建一个查询构造器
         $builder = Product::query()->where('on_sale', true);
 
@@ -66,8 +66,6 @@ class ProductsController extends Controller
             ],
             // 等价于 isset($category) ? $category : null
             'category' => $category ?? null,
-            // 将类目树传递给模板文件
-            'categoryTree' => $categoryService->getCategoryTree(),
         ]);
     }
 
