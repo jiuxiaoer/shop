@@ -26,6 +26,8 @@ class ProductsController extends AdminController
     protected function grid()
     {
         $grid = new Grid(new Product);
+        // 使用 with 来预加载商品类目数据，减少 SQL 查询
+        $grid->model()->where('type', Product::TYPE_NORMAL)->with(['category']);
         $grid->id('ID')->sortable();
         $grid->title('商品名称')->filter('like');
         // Laravel-Admin 支持用符号 . 来展示关联关系的字段
