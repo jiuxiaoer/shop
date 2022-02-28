@@ -19,6 +19,8 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('route:list')->dailyAt('02:00');
         $schedule->command('env')->dailyAt('02:00');
+        // 每分钟执行一次
+        $schedule->command('cron:finish-crowdfunding')->everyMinute();
     }
 
     /**
