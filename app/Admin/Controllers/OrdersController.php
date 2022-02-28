@@ -5,6 +5,7 @@ namespace App\Admin\Controllers;
 use App\Exceptions\InternalException;
 use App\Exceptions\InvalidRequestException;
 use App\Http\Requests\Admin\HandleRefundRequest;
+use App\Models\CrowdfundingProduct;
 use App\Models\Order;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Grid;
@@ -48,7 +49,7 @@ class OrdersController extends AdminController
                 $batch->disableDelete();
             });
         });
-        $grid->filter(function($filter){
+        $grid->filter(function ($filter) {
             // 去掉默认的id过滤器
             $filter->disableIdFilter();
             // 在这里添加字段过滤器
@@ -56,14 +57,14 @@ class OrdersController extends AdminController
             $filter->between('paid_at', '创建时间')->datetime();
             $filter->between('total_amount', '订单金额');
 
-            $filter->equal('payment_method','支付方式')->radio([
-                'alipay'    => '支付宝',
-                'wechat'    => '微信',
+            $filter->equal('payment_method', '支付方式')->radio([
+                'alipay' => '支付宝',
+                'wechat' => '微信',
             ]);
-            $filter->equal('refund_status','退款状态')->radio(
+            $filter->equal('refund_status', '退款状态')->radio(
                 Order::$refundStatusMap
             );
-            $filter->equal('ship_status','物流状态')->radio(
+            $filter->equal('ship_status', '物流状态')->radio(
                 Order::$shipStatusMap
             );
 
@@ -83,6 +84,12 @@ class OrdersController extends AdminController
         if (!$order->paid_at) {
             throw new InvalidRequestException('该订单未付款');
         }
+        // 众筹订单只有在众筹成功之后发货
+        if ($order->type === Order::TYPE_CROWDFUNDING &&
+            $order->crowdfunding_status === CrowdfundingProduct::STATUS_SUCCESS) {
+            throw new InvalidRequestException('众筹订单只能在众筹成功之后发货');
+        }
+
         // 判断当前订单发货状态是否为未发货
         if ($order->ship_status !== Order::SHIP_STATUS_PENDING) {
             throw new InvalidRequestException('该订单已发货');
@@ -106,8 +113,8 @@ class OrdersController extends AdminController
         // 返回上一页
         return redirect()->back();
     }
-    public function handleRefund(Order $order, HandleRefundRequest $request)
-    {
+
+    public function handleRefund(Order $order, HandleRefundRequest $request) {
         // 判断订单状态是否正确
         if ($order->refund_status !== Order::REFUND_STATUS_APPLIED) {
             throw new InvalidRequestException('订单状态不正确');
@@ -129,7 +136,7 @@ class OrdersController extends AdminController
             // 将订单的退款状态改为未退款
             $order->update([
                 'refund_status' => Order::REFUND_STATUS_PENDING,
-                'extra'         => $extra,
+                'extra' => $extra,
             ]);
         }
 
@@ -137,8 +144,7 @@ class OrdersController extends AdminController
     }
 
 
-    protected function _refundOrder(Order $order)
-    {
+    protected function _refundOrder(Order $order) {
         // 判断该订单的支付方式
         switch ($order->payment_method) {
             case 'wechat':
@@ -188,7 +194,7 @@ class OrdersController extends AdminController
                 break;
             default:
                 // 原则上不可能出现，这个只是为了代码健壮性
-                throw new InternalException('未知订单支付方式：'.$order->payment_method);
+                throw new InternalException('未知订单支付方式：' . $order->payment_method);
                 break;
         }
     }
