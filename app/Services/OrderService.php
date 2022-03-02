@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\CouponCodeUnavailableException;
 use App\Exceptions\InternalException;
+use App\Jobs\RefundInstallmentOrder;
 use App\Models\CouponCode;
 use App\Models\User;
 use App\Models\UserAddress;
@@ -15,8 +16,7 @@ use Carbon\Carbon;
 
 class OrderService
 {
-    public function store(User $user, UserAddress $address, $remark, $items, CouponCode $coupon = null)
-    {
+    public function store(User $user, UserAddress $address, $remark, $items, CouponCode $coupon = null) {
         // 如果传入了优惠券，则先检查是否可用
         if ($coupon) {
             $coupon->checkAvailable($user);
@@ -27,16 +27,16 @@ class OrderService
             // 更新此地址的最后使用时间
             $address->update(['last_used_at' => Carbon::now()]);
             // 创建一个订单
-            $order   = new Order([
-                'address'      => [ // 将地址信息放入订单中
-                    'address'       => $address->full_address,
-                    'zip'           => $address->zip,
-                    'contact_name'  => $address->contact_name,
+            $order = new Order([
+                'address' => [ // 将地址信息放入订单中
+                    'address' => $address->full_address,
+                    'zip' => $address->zip,
+                    'contact_name' => $address->contact_name,
                     'contact_phone' => $address->contact_phone,
                 ],
-                'remark'       => $remark,
+                'remark' => $remark,
                 'total_amount' => 0,
-                'type'         => Order::TYPE_NORMAL,
+                'type' => Order::TYPE_NORMAL,
             ]);
             // 订单关联到当前用户
             $order->user()->associate($user);
@@ -46,11 +46,11 @@ class OrderService
             $totalAmount = 0;
             // 遍历用户提交的 SKU
             foreach ($items as $data) {
-                $sku  = ProductSku::find($data['sku_id']);
+                $sku = ProductSku::find($data['sku_id']);
                 // 创建一个 OrderItem 并直接与当前订单关联
                 $item = $order->items()->make([
                     'amount' => $data['amount'],
-                    'price'  => $sku->price,
+                    'price' => $sku->price,
                 ]);
                 $item->product()->associate($sku->product_id);
                 $item->productSku()->associate($sku);
@@ -89,23 +89,22 @@ class OrderService
 
 
     // 新建一个 crowdfunding 方法用于实现众筹商品下单逻辑
-    public function crowdfunding(User $user, UserAddress $address, ProductSku $sku, $amount)
-    {
+    public function crowdfunding(User $user, UserAddress $address, ProductSku $sku, $amount) {
         // 开启事务
         $order = \DB::transaction(function () use ($amount, $sku, $user, $address) {
             // 更新地址最后使用时间
             $address->update(['last_used_at' => Carbon::now()]);
             // 创建一个订单
             $order = new Order([
-                'address'      => [ // 将地址信息放入订单中
-                    'address'       => $address->full_address,
-                    'zip'           => $address->zip,
-                    'contact_name'  => $address->contact_name,
+                'address' => [ // 将地址信息放入订单中
+                    'address' => $address->full_address,
+                    'zip' => $address->zip,
+                    'contact_name' => $address->contact_name,
                     'contact_phone' => $address->contact_phone,
                 ],
-                'remark'       => '',
+                'remark' => '',
                 'total_amount' => $sku->price * $amount,
-                'type'         => Order::TYPE_CROWDFUNDING,
+                'type' => Order::TYPE_CROWDFUNDING,
             ]);
             // 订单关联到当前用户
             $order->user()->associate($user);
@@ -114,7 +113,7 @@ class OrderService
             // 创建一个新的订单项并与 SKU 关联
             $item = $order->items()->make([
                 'amount' => $amount,
-                'price'  => $sku->price,
+                'price' => $sku->price,
             ]);
             $item->product()->associate($sku->product_id);
             $item->productSku()->associate($sku);
@@ -184,6 +183,14 @@ class OrderService
                         'refund_status' => Order::REFUND_STATUS_SUCCESS,
                     ]);
                 }
+                break;
+            case 'installment':
+                $order->update([
+                    'refund_no' => Order::getAvailableRefundNo(), // 生成退款订单号
+                    'refund_status' => Order::REFUND_STATUS_PROCESSING, // 将退款状态改为退款中
+                ]);
+                // 触发退款异步任务
+                dispatch(new RefundInstallmentOrder($order));
                 break;
             default:
                 // 原则上不可能出现，这个只是为了代码健壮性
