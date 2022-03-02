@@ -26,22 +26,16 @@
 
 优惠券模块；
 
+类目模块
+
+众筹模块
+
+分期模块
 
 数据备份。
 
 ## 部署教程
-1.git clone
-
-2.先配置好数据库 和redis 信息
-
-3.安装项目依赖
-composer install
-
-4.构建数据库
-php artisan migrate:fresh
-
-5.构建一个超级管理员
-php artisan admin:create-user
+TODO
 
 6.启动队列
 
