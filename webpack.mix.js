@@ -14,4 +14,6 @@ const mix = require('laravel-mix');
 mix.js('resources/js/app.js', 'public/js')
   .vue()
   .sass('resources/sass/app.scss', 'public/css')
-  .version();
+  .version()
+  .copyDirectory('resources/layer/mobile', 'public/js/mobile')
+  .copyDirectory('resources/layer/theme', 'public/js/theme');

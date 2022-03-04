@@ -5,6 +5,9 @@
  */
 
 require('./bootstrap');
+require('./jquery.pjax.min')
+require('./layer')
+require('./pjax')
 
 window.Vue = require('vue').default;
 

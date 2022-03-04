@@ -2067,6 +2067,12 @@ module.exports = {
  */
 __webpack_require__(/*! ./bootstrap */ "./resources/js/bootstrap.js");
 
+__webpack_require__(/*! ./jquery.pjax.min */ "./resources/js/jquery.pjax.min.js");
+
+__webpack_require__(/*! ./layer */ "./resources/js/layer.js");
+
+__webpack_require__(/*! ./pjax */ "./resources/js/pjax.js");
+
 window.Vue = (__webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm.js")["default"]); // 此处需在引入 Vue 之后引入
 
 __webpack_require__(/*! ./components/SelectDistrict */ "./resources/js/components/SelectDistrict.js");
@@ -2300,6 +2306,1646 @@ Vue.component('user-addresses-create-and-edit', {
       }
     }
   }
+});
+
+/***/ }),
+
+/***/ "./resources/js/jquery.pjax.min.js":
+/*!*****************************************!*\
+  !*** ./resources/js/jquery.pjax.min.js ***!
+  \*****************************************/
+/***/ (() => {
+
+function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
+
+/*!
+ * Copyright 2012, Chris Wanstrath
+ * Released under the MIT License
+ * https://github.com/defunkt/jquery-pjax
+ */
+(function ($) {
+  // When called on a container with a selector, fetches the href with
+  // ajax into the container or with the data-pjax attribute on the link
+  // itself.
+  //
+  // Tries to make sure the back button and ctrl+click work the way
+  // you'd expect.
+  //
+  // Exported as $.fn.pjax
+  //
+  // Accepts a jQuery ajax options object that may include these
+  // pjax specific options:
+  //
+  //
+  // container - String selector for the element where to place the response body.
+  //      push - Whether to pushState the URL. Defaults to true (of course).
+  //   replace - Want to use replaceState instead? That's cool.
+  //
+  // For convenience the second parameter can be either the container or
+  // the options object.
+  //
+  // Returns the jQuery object
+  function fnPjax(selector, container, options) {
+    options = optionsFor(container, options);
+    return this.on('click.pjax', selector, function (event) {
+      var opts = options;
+
+      if (!opts.container) {
+        opts = $.extend({}, options);
+        opts.container = $(this).attr('data-pjax');
+      }
+
+      handleClick(event, opts);
+    });
+  } // Public: pjax on click handler
+  //
+  // Exported as $.pjax.click.
+  //
+  // event   - "click" jQuery.Event
+  // options - pjax options
+  //
+  // Examples
+  //
+  //   $(document).on('click', 'a', $.pjax.click)
+  //   // is the same as
+  //   $(document).pjax('a')
+  //
+  // Returns nothing.
+
+
+  function handleClick(event, container, options) {
+    options = optionsFor(container, options);
+    var link = event.currentTarget;
+    var $link = $(link);
+    if (link.tagName.toUpperCase() !== 'A') throw "$.fn.pjax or $.pjax.click requires an anchor element"; // Middle click, cmd click, and ctrl click should open
+    // links in a new tab as normal.
+
+    if (event.which > 1 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; // Ignore cross origin links
+
+    if (location.protocol !== link.protocol || location.hostname !== link.hostname) return; // Ignore case when a hash is being tacked on the current URL
+
+    if (link.href.indexOf('#') > -1 && stripHash(link) == stripHash(location)) return; // Ignore event with default prevented
+
+    if (event.isDefaultPrevented()) return;
+    var defaults = {
+      url: link.href,
+      container: $link.attr('data-pjax'),
+      target: link
+    };
+    var opts = $.extend({}, defaults, options);
+    var clickEvent = $.Event('pjax:click');
+    $link.trigger(clickEvent, [opts]);
+
+    if (!clickEvent.isDefaultPrevented()) {
+      pjax(opts);
+      event.preventDefault();
+      $link.trigger('pjax:clicked', [opts]);
+    }
+  } // Public: pjax on form submit handler
+  //
+  // Exported as $.pjax.submit
+  //
+  // event   - "click" jQuery.Event
+  // options - pjax options
+  //
+  // Examples
+  //
+  //  $(document).on('submit', 'form', function(event) {
+  //    $.pjax.submit(event, '[data-pjax-container]')
+  //  })
+  //
+  // Returns nothing.
+
+
+  function handleSubmit(event, container, options) {
+    options = optionsFor(container, options);
+    var form = event.currentTarget;
+    var $form = $(form);
+    if (form.tagName.toUpperCase() !== 'FORM') throw "$.pjax.submit requires a form element";
+    var defaults = {
+      type: ($form.attr('method') || 'GET').toUpperCase(),
+      url: $form.attr('action'),
+      container: $form.attr('data-pjax'),
+      target: form
+    };
+
+    if (defaults.type !== 'GET' && window.FormData !== undefined) {
+      defaults.data = new FormData(form);
+      defaults.processData = false;
+      defaults.contentType = false;
+    } else {
+      // Can't handle file uploads, exit
+      if ($form.find(':file').length) {
+        return;
+      } // Fallback to manually serializing the fields
+
+
+      defaults.data = $form.serializeArray();
+    }
+
+    pjax($.extend({}, defaults, options));
+    event.preventDefault();
+  } // Loads a URL with ajax, puts the response body inside a container,
+  // then pushState()'s the loaded URL.
+  //
+  // Works just like $.ajax in that it accepts a jQuery ajax
+  // settings object (with keys like url, type, data, etc).
+  //
+  // Accepts these extra keys:
+  //
+  // container - String selector for where to stick the response body.
+  //      push - Whether to pushState the URL. Defaults to true (of course).
+  //   replace - Want to use replaceState instead? That's cool.
+  //
+  // Use it just like $.ajax:
+  //
+  //   var xhr = $.pjax({ url: this.href, container: '#main' })
+  //   console.log( xhr.readyState )
+  //
+  // Returns whatever $.ajax returns.
+
+
+  function pjax(options) {
+    options = $.extend(true, {}, $.ajaxSettings, pjax.defaults, options);
+
+    if ($.isFunction(options.url)) {
+      options.url = options.url();
+    }
+
+    var hash = parseURL(options.url).hash;
+    var containerType = $.type(options.container);
+
+    if (containerType !== 'string') {
+      throw "expected string value for 'container' option; got " + containerType;
+    }
+
+    var context = options.context = $(options.container);
+
+    if (!context.length) {
+      throw "the container selector '" + options.container + "' did not match anything";
+    } // We want the browser to maintain two separate internal caches: one
+    // for pjax'd partial page loads and one for normal page loads.
+    // Without adding this secret parameter, some browsers will often
+    // confuse the two.
+
+
+    if (!options.data) options.data = {};
+
+    if ($.isArray(options.data)) {
+      options.data.push({
+        name: '_pjax',
+        value: options.container
+      });
+    } else {
+      options.data._pjax = options.container;
+    }
+
+    function fire(type, args, props) {
+      if (!props) props = {};
+      props.relatedTarget = options.target;
+      var event = $.Event(type, props);
+      context.trigger(event, args);
+      return !event.isDefaultPrevented();
+    }
+
+    var timeoutTimer;
+
+    options.beforeSend = function (xhr, settings) {
+      // No timeout for non-GET requests
+      // Its not safe to request the resource again with a fallback method.
+      if (settings.type !== 'GET') {
+        settings.timeout = 0;
+      }
+
+      xhr.setRequestHeader('X-PJAX', 'true');
+      xhr.setRequestHeader('X-PJAX-Container', options.container);
+      if (!fire('pjax:beforeSend', [xhr, settings])) return false;
+
+      if (settings.timeout > 0) {
+        timeoutTimer = setTimeout(function () {
+          if (fire('pjax:timeout', [xhr, options])) xhr.abort('timeout');
+        }, settings.timeout); // Clear timeout setting so jquerys internal timeout isn't invoked
+
+        settings.timeout = 0;
+      }
+
+      var url = parseURL(settings.url);
+      if (hash) url.hash = hash;
+      options.requestUrl = stripInternalParams(url);
+    };
+
+    options.complete = function (xhr, textStatus) {
+      if (timeoutTimer) clearTimeout(timeoutTimer);
+      fire('pjax:complete', [xhr, textStatus, options]);
+      fire('pjax:end', [xhr, options]);
+    };
+
+    options.error = function (xhr, textStatus, errorThrown) {
+      var container = extractContainer("", xhr, options);
+      var allowed = fire('pjax:error', [xhr, textStatus, errorThrown, options]);
+
+      if (options.type == 'GET' && textStatus !== 'abort' && allowed) {
+        locationReplace(container.url);
+      }
+    };
+
+    options.success = function (data, status, xhr) {
+      var previousState = pjax.state; // If $.pjax.defaults.version is a function, invoke it first.
+      // Otherwise it can be a static string.
+
+      var currentVersion = typeof $.pjax.defaults.version === 'function' ? $.pjax.defaults.version() : $.pjax.defaults.version;
+      var latestVersion = xhr.getResponseHeader('X-PJAX-Version');
+      var container = extractContainer(data, xhr, options);
+      var url = parseURL(container.url);
+
+      if (hash) {
+        url.hash = hash;
+        container.url = url.href;
+      } // If there is a layout version mismatch, hard load the new url
+
+
+      if (currentVersion && latestVersion && currentVersion !== latestVersion) {
+        locationReplace(container.url);
+        return;
+      } // If the new response is missing a body, hard load the page
+
+
+      if (!container.contents) {
+        locationReplace(container.url);
+        return;
+      }
+
+      pjax.state = {
+        id: options.id || uniqueId(),
+        url: container.url,
+        title: container.title,
+        container: options.container,
+        fragment: options.fragment,
+        timeout: options.timeout
+      };
+
+      if (options.push || options.replace) {
+        window.history.replaceState(pjax.state, container.title, container.url);
+      } // Only blur the focus if the focused element is within the container.
+
+
+      var blurFocus = $.contains(context, document.activeElement); // Clear out any focused controls before inserting new page contents.
+
+      if (blurFocus) {
+        try {
+          document.activeElement.blur();
+        } catch (e) {
+          /* ignore */
+        }
+      }
+
+      if (container.title) document.title = container.title;
+      fire('pjax:beforeReplace', [container.contents, options], {
+        state: pjax.state,
+        previousState: previousState
+      });
+      context.html(container.contents); // FF bug: Won't autofocus fields that are inserted via JS.
+      // This behavior is incorrect. So if theres no current focus, autofocus
+      // the last field.
+      //
+      // http://www.w3.org/html/wg/drafts/html/master/forms.html
+
+      var autofocusEl = context.find('input[autofocus], textarea[autofocus]').last()[0];
+
+      if (autofocusEl && document.activeElement !== autofocusEl) {
+        autofocusEl.focus();
+      }
+
+      executeScriptTags(container.scripts);
+      var scrollTo = options.scrollTo; // Ensure browser scrolls to the element referenced by the URL anchor
+
+      if (hash) {
+        var name = decodeURIComponent(hash.slice(1));
+        var target = document.getElementById(name) || document.getElementsByName(name)[0];
+        if (target) scrollTo = $(target).offset().top;
+      }
+
+      if (typeof scrollTo == 'number') $(window).scrollTop(scrollTo);
+      fire('pjax:success', [data, status, xhr, options]);
+    }; // Initialize pjax.state for the initial page load. Assume we're
+    // using the container and options of the link we're loading for the
+    // back button to the initial page. This ensures good back button
+    // behavior.
+
+
+    if (!pjax.state) {
+      pjax.state = {
+        id: uniqueId(),
+        url: window.location.href,
+        title: document.title,
+        container: options.container,
+        fragment: options.fragment,
+        timeout: options.timeout
+      };
+      window.history.replaceState(pjax.state, document.title);
+    } // Cancel the current request if we're already pjaxing
+
+
+    abortXHR(pjax.xhr);
+    pjax.options = options;
+    var xhr = pjax.xhr = $.ajax(options);
+
+    if (xhr.readyState > 0) {
+      if (options.push && !options.replace) {
+        // Cache current container element before replacing it
+        cachePush(pjax.state.id, [options.container, cloneContents(context)]);
+        window.history.pushState(null, "", options.requestUrl);
+      }
+
+      fire('pjax:start', [xhr, options]);
+      fire('pjax:send', [xhr, options]);
+    }
+
+    return pjax.xhr;
+  } // Public: Reload current page with pjax.
+  //
+  // Returns whatever $.pjax returns.
+
+
+  function pjaxReload(container, options) {
+    var defaults = {
+      url: window.location.href,
+      push: false,
+      replace: true,
+      scrollTo: false
+    };
+    return pjax($.extend(defaults, optionsFor(container, options)));
+  } // Internal: Hard replace current state with url.
+  //
+  // Work for around WebKit
+  //   https://bugs.webkit.org/show_bug.cgi?id=93506
+  //
+  // Returns nothing.
+
+
+  function locationReplace(url) {
+    window.history.replaceState(null, "", pjax.state.url);
+    window.location.replace(url);
+  }
+
+  var initialPop = true;
+  var initialURL = window.location.href;
+  var initialState = window.history.state; // Initialize $.pjax.state if possible
+  // Happens when reloading a page and coming forward from a different
+  // session history.
+
+  if (initialState && initialState.container) {
+    pjax.state = initialState;
+  } // Non-webkit browsers don't fire an initial popstate event
+
+
+  if ('state' in window.history) {
+    initialPop = false;
+  } // popstate handler takes care of the back and forward buttons
+  //
+  // You probably shouldn't use pjax on pages with other pushState
+  // stuff yet.
+
+
+  function onPjaxPopstate(event) {
+    // Hitting back or forward should override any pending PJAX request.
+    if (!initialPop) {
+      abortXHR(pjax.xhr);
+    }
+
+    var previousState = pjax.state;
+    var state = event.state;
+    var direction;
+
+    if (state && state.container) {
+      // When coming forward from a separate history session, will get an
+      // initial pop with a state we are already at. Skip reloading the current
+      // page.
+      if (initialPop && initialURL == state.url) return;
+
+      if (previousState) {
+        // If popping back to the same state, just skip.
+        // Could be clicking back from hashchange rather than a pushState.
+        if (previousState.id === state.id) return; // Since state IDs always increase, we can deduce the navigation direction
+
+        direction = previousState.id < state.id ? 'forward' : 'back';
+      }
+
+      var cache = cacheMapping[state.id] || [];
+      var containerSelector = cache[0] || state.container;
+      var container = $(containerSelector),
+          contents = cache[1];
+
+      if (container.length) {
+        if (previousState) {
+          // Cache current container before replacement and inform the
+          // cache which direction the history shifted.
+          cachePop(direction, previousState.id, [containerSelector, cloneContents(container)]);
+        }
+
+        var popstateEvent = $.Event('pjax:popstate', {
+          state: state,
+          direction: direction
+        });
+        container.trigger(popstateEvent);
+        var options = {
+          id: state.id,
+          url: state.url,
+          container: containerSelector,
+          push: false,
+          fragment: state.fragment,
+          timeout: state.timeout,
+          scrollTo: false
+        };
+
+        if (contents) {
+          container.trigger('pjax:start', [null, options]);
+          pjax.state = state;
+          if (state.title) document.title = state.title;
+          var beforeReplaceEvent = $.Event('pjax:beforeReplace', {
+            state: state,
+            previousState: previousState
+          });
+          container.trigger(beforeReplaceEvent, [contents, options]);
+          container.html(contents);
+          container.trigger('pjax:end', [null, options]);
+        } else {
+          pjax(options);
+        } // Force reflow/relayout before the browser tries to restore the
+        // scroll position.
+
+
+        container[0].offsetHeight; // eslint-disable-line no-unused-expressions
+      } else {
+        locationReplace(location.href);
+      }
+    }
+
+    initialPop = false;
+  } // Fallback version of main pjax function for browsers that don't
+  // support pushState.
+  //
+  // Returns nothing since it retriggers a hard form submission.
+
+
+  function fallbackPjax(options) {
+    var url = $.isFunction(options.url) ? options.url() : options.url,
+        method = options.type ? options.type.toUpperCase() : 'GET';
+    var form = $('<form>', {
+      method: method === 'GET' ? 'GET' : 'POST',
+      action: url,
+      style: 'display:none'
+    });
+
+    if (method !== 'GET' && method !== 'POST') {
+      form.append($('<input>', {
+        type: 'hidden',
+        name: '_method',
+        value: method.toLowerCase()
+      }));
+    }
+
+    var data = options.data;
+
+    if (typeof data === 'string') {
+      $.each(data.split('&'), function (index, value) {
+        var pair = value.split('=');
+        form.append($('<input>', {
+          type: 'hidden',
+          name: pair[0],
+          value: pair[1]
+        }));
+      });
+    } else if ($.isArray(data)) {
+      $.each(data, function (index, value) {
+        form.append($('<input>', {
+          type: 'hidden',
+          name: value.name,
+          value: value.value
+        }));
+      });
+    } else if (_typeof(data) === 'object') {
+      var key;
+
+      for (key in data) {
+        form.append($('<input>', {
+          type: 'hidden',
+          name: key,
+          value: data[key]
+        }));
+      }
+    }
+
+    $(document.body).append(form);
+    form.submit();
+  } // Internal: Abort an XmlHttpRequest if it hasn't been completed,
+  // also removing its event handlers.
+
+
+  function abortXHR(xhr) {
+    if (xhr && xhr.readyState < 4) {
+      xhr.onreadystatechange = $.noop;
+      xhr.abort();
+    }
+  } // Internal: Generate unique id for state object.
+  //
+  // Use a timestamp instead of a counter since ids should still be
+  // unique across page loads.
+  //
+  // Returns Number.
+
+
+  function uniqueId() {
+    return new Date().getTime();
+  }
+
+  function cloneContents(container) {
+    var cloned = container.clone(); // Unmark script tags as already being eval'd so they can get executed again
+    // when restored from cache. HAXX: Uses jQuery internal method.
+
+    cloned.find('script').each(function () {
+      if (!this.src) $._data(this, 'globalEval', false);
+    });
+    return cloned.contents();
+  } // Internal: Strip internal query params from parsed URL.
+  //
+  // Returns sanitized url.href String.
+
+
+  function stripInternalParams(url) {
+    url.search = url.search.replace(/([?&])(_pjax|_)=[^&]*/g, '').replace(/^&/, '');
+    return url.href.replace(/\?($|#)/, '$1');
+  } // Internal: Parse URL components and returns a Locationish object.
+  //
+  // url - String URL
+  //
+  // Returns HTMLAnchorElement that acts like Location.
+
+
+  function parseURL(url) {
+    var a = document.createElement('a');
+    a.href = url;
+    return a;
+  } // Internal: Return the `href` component of given URL object with the hash
+  // portion removed.
+  //
+  // location - Location or HTMLAnchorElement
+  //
+  // Returns String
+
+
+  function stripHash(location) {
+    return location.href.replace(/#.*/, '');
+  } // Internal: Build options Object for arguments.
+  //
+  // For convenience the first parameter can be either the container or
+  // the options object.
+  //
+  // Examples
+  //
+  //   optionsFor('#container')
+  //   // => {container: '#container'}
+  //
+  //   optionsFor('#container', {push: true})
+  //   // => {container: '#container', push: true}
+  //
+  //   optionsFor({container: '#container', push: true})
+  //   // => {container: '#container', push: true}
+  //
+  // Returns options Object.
+
+
+  function optionsFor(container, options) {
+    if (container && options) {
+      options = $.extend({}, options);
+      options.container = container;
+      return options;
+    } else if ($.isPlainObject(container)) {
+      return container;
+    } else {
+      return {
+        container: container
+      };
+    }
+  } // Internal: Filter and find all elements matching the selector.
+  //
+  // Where $.fn.find only matches descendants, findAll will test all the
+  // top level elements in the jQuery object as well.
+  //
+  // elems    - jQuery object of Elements
+  // selector - String selector to match
+  //
+  // Returns a jQuery object.
+
+
+  function findAll(elems, selector) {
+    return elems.filter(selector).add(elems.find(selector));
+  }
+
+  function parseHTML(html) {
+    return $.parseHTML(html, document, true);
+  } // Internal: Extracts container and metadata from response.
+  //
+  // 1. Extracts X-PJAX-URL header if set
+  // 2. Extracts inline <title> tags
+  // 3. Builds response Element and extracts fragment if set
+  //
+  // data    - String response data
+  // xhr     - XHR response
+  // options - pjax options Object
+  //
+  // Returns an Object with url, title, and contents keys.
+
+
+  function extractContainer(data, xhr, options) {
+    var obj = {},
+        fullDocument = /<html/i.test(data); // Prefer X-PJAX-URL header if it was set, otherwise fallback to
+    // using the original requested url.
+
+    var serverUrl = xhr.getResponseHeader('X-PJAX-URL');
+    obj.url = serverUrl ? stripInternalParams(parseURL(serverUrl)) : options.requestUrl;
+    var $head, $body; // Attempt to parse response html into elements
+
+    if (fullDocument) {
+      $body = $(parseHTML(data.match(/<body[^>]*>([\s\S.]*)<\/body>/i)[0]));
+      var head = data.match(/<head[^>]*>([\s\S.]*)<\/head>/i);
+      $head = head != null ? $(parseHTML(head[0])) : $body;
+    } else {
+      $head = $body = $(parseHTML(data));
+    } // If response data is empty, return fast
+
+
+    if ($body.length === 0) return obj; // If there's a <title> tag in the header, use it as
+    // the page's title.
+
+    obj.title = findAll($head, 'title').last().text();
+
+    if (options.fragment) {
+      var $fragment = $body; // If they specified a fragment, look for it in the response
+      // and pull it out.
+
+      if (options.fragment !== 'body') {
+        $fragment = findAll($fragment, options.fragment).first();
+      }
+
+      if ($fragment.length) {
+        obj.contents = options.fragment === 'body' ? $fragment : $fragment.contents(); // If there's no title, look for data-title and title attributes
+        // on the fragment
+
+        if (!obj.title) obj.title = $fragment.attr('title') || $fragment.data('title');
+      }
+    } else if (!fullDocument) {
+      obj.contents = $body;
+    } // Clean up any <title> tags
+
+
+    if (obj.contents) {
+      // Remove any parent title elements
+      obj.contents = obj.contents.not(function () {
+        return $(this).is('title');
+      }); // Then scrub any titles from their descendants
+
+      obj.contents.find('title').remove(); // Gather all script[src] elements
+
+      obj.scripts = findAll(obj.contents, 'script[src]').remove();
+      obj.contents = obj.contents.not(obj.scripts);
+    } // Trim any whitespace off the title
+
+
+    if (obj.title) obj.title = $.trim(obj.title);
+    return obj;
+  } // Load an execute scripts using standard script request.
+  //
+  // Avoids jQuery's traditional $.getScript which does a XHR request and
+  // globalEval.
+  //
+  // scripts - jQuery object of script Elements
+  //
+  // Returns nothing.
+
+
+  function executeScriptTags(scripts) {
+    if (!scripts) return;
+    var existingScripts = $('script[src]');
+    scripts.each(function () {
+      var src = this.src;
+      var matchedScripts = existingScripts.filter(function () {
+        return this.src === src;
+      });
+      if (matchedScripts.length) return;
+      var script = document.createElement('script');
+      var type = $(this).attr('type');
+      if (type) script.type = type;
+      script.src = $(this).attr('src');
+      document.head.appendChild(script);
+    });
+  } // Internal: History DOM caching class.
+
+
+  var cacheMapping = {};
+  var cacheForwardStack = [];
+  var cacheBackStack = []; // Push previous state id and container contents into the history
+  // cache. Should be called in conjunction with `pushState` to save the
+  // previous container contents.
+  //
+  // id    - State ID Number
+  // value - DOM Element to cache
+  //
+  // Returns nothing.
+
+  function cachePush(id, value) {
+    cacheMapping[id] = value;
+    cacheBackStack.push(id); // Remove all entries in forward history stack after pushing a new page.
+
+    trimCacheStack(cacheForwardStack, 0); // Trim back history stack to max cache length.
+
+    trimCacheStack(cacheBackStack, pjax.defaults.maxCacheLength);
+  } // Shifts cache from directional history cache. Should be
+  // called on `popstate` with the previous state id and container
+  // contents.
+  //
+  // direction - "forward" or "back" String
+  // id        - State ID Number
+  // value     - DOM Element to cache
+  //
+  // Returns nothing.
+
+
+  function cachePop(direction, id, value) {
+    var pushStack, popStack;
+    cacheMapping[id] = value;
+
+    if (direction === 'forward') {
+      pushStack = cacheBackStack;
+      popStack = cacheForwardStack;
+    } else {
+      pushStack = cacheForwardStack;
+      popStack = cacheBackStack;
+    }
+
+    pushStack.push(id);
+    id = popStack.pop();
+    if (id) delete cacheMapping[id]; // Trim whichever stack we just pushed to to max cache length.
+
+    trimCacheStack(pushStack, pjax.defaults.maxCacheLength);
+  } // Trim a cache stack (either cacheBackStack or cacheForwardStack) to be no
+  // longer than the specified length, deleting cached DOM elements as necessary.
+  //
+  // stack  - Array of state IDs
+  // length - Maximum length to trim to
+  //
+  // Returns nothing.
+
+
+  function trimCacheStack(stack, length) {
+    while (stack.length > length) {
+      delete cacheMapping[stack.shift()];
+    }
+  } // Public: Find version identifier for the initial page load.
+  //
+  // Returns String version or undefined.
+
+
+  function findVersion() {
+    return $('meta').filter(function () {
+      var name = $(this).attr('http-equiv');
+      return name && name.toUpperCase() === 'X-PJAX-VERSION';
+    }).attr('content');
+  } // Install pjax functions on $.pjax to enable pushState behavior.
+  //
+  // Does nothing if already enabled.
+  //
+  // Examples
+  //
+  //     $.pjax.enable()
+  //
+  // Returns nothing.
+
+
+  function enable() {
+    $.fn.pjax = fnPjax;
+    $.pjax = pjax;
+    $.pjax.enable = $.noop;
+    $.pjax.disable = disable;
+    $.pjax.click = handleClick;
+    $.pjax.submit = handleSubmit;
+    $.pjax.reload = pjaxReload;
+    $.pjax.defaults = {
+      timeout: 650,
+      push: true,
+      replace: false,
+      type: 'GET',
+      dataType: 'html',
+      scrollTo: 0,
+      maxCacheLength: 20,
+      version: findVersion
+    };
+    $(window).on('popstate.pjax', onPjaxPopstate);
+  } // Disable pushState behavior.
+  //
+  // This is the case when a browser doesn't support pushState. It is
+  // sometimes useful to disable pushState for debugging on a modern
+  // browser.
+  //
+  // Examples
+  //
+  //     $.pjax.disable()
+  //
+  // Returns nothing.
+
+
+  function disable() {
+    $.fn.pjax = function () {
+      return this;
+    };
+
+    $.pjax = fallbackPjax;
+    $.pjax.enable = enable;
+    $.pjax.disable = $.noop;
+    $.pjax.click = $.noop;
+    $.pjax.submit = $.noop;
+
+    $.pjax.reload = function () {
+      window.location.reload();
+    };
+
+    $(window).off('popstate.pjax', onPjaxPopstate);
+  } // Add the state property to jQuery's event object so we can use it in
+  // $(window).bind('popstate')
+
+
+  if ($.event.props && $.inArray('state', $.event.props) < 0) {
+    $.event.props.push('state');
+  } else if (!('state' in $.Event.prototype)) {
+    $.event.addProp('state');
+  } // Is pjax supported by this browser?
+
+
+  $.support.pjax = window.history && window.history.pushState && window.history.replaceState && // pushState isn't reliable on iOS until 5.
+  !navigator.userAgent.match(/((iPod|iPhone|iPad).+\bOS\s+[1-4]\D|WebApps\/.+CFNetwork)/);
+
+  if ($.support.pjax) {
+    enable();
+  } else {
+    disable();
+  }
+})(jQuery);
+
+/***/ }),
+
+/***/ "./resources/js/layer.js":
+/*!*******************************!*\
+  !*** ./resources/js/layer.js ***!
+  \*******************************/
+/***/ ((module, exports, __webpack_require__) => {
+
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
+
+/*! layer-v3.5.1 Web 通用弹出层组件 MIT License */
+;
+!function (e, t) {
+  "use strict";
+
+  var i,
+      n,
+      a = e.layui && layui.define,
+      o = {
+    getPath: function () {
+      var t = document.currentScript ? document.currentScript.src : function () {
+        for (var e, t = document.scripts, i = t.length - 1, n = i; n > 0; n--) {
+          if ("interactive" === t[n].readyState) {
+            e = t[n].src;
+            break;
+          }
+        }
+
+        return e || t[i].src;
+      }(),
+          i = e.LAYUI_GLOBAL || {};
+      return i.layer_dir || t.substring(0, t.lastIndexOf("/") + 1);
+    }(),
+    config: {},
+    end: {},
+    minIndex: 0,
+    minLeft: [],
+    btn: ["&#x786E;&#x5B9A;", "&#x53D6;&#x6D88;"],
+    type: ["dialog", "page", "iframe", "loading", "tips"],
+    getStyle: function getStyle(t, i) {
+      var n = t.currentStyle ? t.currentStyle : e.getComputedStyle(t, null);
+      return n[n.getPropertyValue ? "getPropertyValue" : "getAttribute"](i);
+    },
+    link: function link(t, i, n) {
+      if (r.path) {
+        var a = document.getElementsByTagName("head")[0],
+            s = document.createElement("link");
+        "string" == typeof i && (n = i);
+        var l = (n || t).replace(/\.|\//g, ""),
+            f = "layuicss-" + l,
+            c = "creating",
+            u = 0;
+        s.rel = "stylesheet", s.href = r.path + t, s.id = f, document.getElementById(f) || a.appendChild(s), "function" == typeof i && !function d(t) {
+          var n = 100,
+              a = document.getElementById(f);
+          return ++u > 1e4 / n ? e.console && console.error(l + ".css: Invalid") : void (1989 === parseInt(o.getStyle(a, "width")) ? (t === c && a.removeAttribute("lay-status"), a.getAttribute("lay-status") === c ? setTimeout(d, n) : i()) : (a.setAttribute("lay-status", c), setTimeout(function () {
+            d(c);
+          }, n)));
+        }();
+      }
+    }
+  },
+      r = {
+    v: "3.5.1",
+    ie: function () {
+      var t = navigator.userAgent.toLowerCase();
+      return !!(e.ActiveXObject || "ActiveXObject" in e) && ((t.match(/msie\s(\d+)/) || [])[1] || "11");
+    }(),
+    index: e.layer && e.layer.v ? 1e5 : 0,
+    path: o.getPath,
+    config: function config(e, t) {
+      return e = e || {}, r.cache = o.config = i.extend({}, o.config, e), r.path = o.config.path || r.path, "string" == typeof e.extend && (e.extend = [e.extend]), o.config.path && r.ready(), e.extend ? (a ? layui.addcss("modules/layer/" + e.extend) : o.link("theme/" + e.extend), this) : this;
+    },
+    ready: function ready(e) {
+      var t = "layer",
+          i = "",
+          n = (a ? "modules/layer/" : "theme/") + "default/layer.css?v=" + r.v + i;
+      return a ? layui.addcss(n, e, t) : o.link(n, e, t), this;
+    },
+    alert: function alert(e, t, n) {
+      var a = "function" == typeof t;
+      return a && (n = t), r.open(i.extend({
+        content: e,
+        yes: n
+      }, a ? {} : t));
+    },
+    confirm: function confirm(e, t, n, a) {
+      var s = "function" == typeof t;
+      return s && (a = n, n = t), r.open(i.extend({
+        content: e,
+        btn: o.btn,
+        yes: n,
+        btn2: a
+      }, s ? {} : t));
+    },
+    msg: function msg(e, n, a) {
+      var s = "function" == typeof n,
+          f = o.config.skin,
+          c = (f ? f + " " + f + "-msg" : "") || "layui-layer-msg",
+          u = l.anim.length - 1;
+      return s && (a = n), r.open(i.extend({
+        content: e,
+        time: 3e3,
+        shade: !1,
+        skin: c,
+        title: !1,
+        closeBtn: !1,
+        btn: !1,
+        resize: !1,
+        end: a
+      }, s && !o.config.skin ? {
+        skin: c + " layui-layer-hui",
+        anim: u
+      } : function () {
+        return n = n || {}, (n.icon === -1 || n.icon === t && !o.config.skin) && (n.skin = c + " " + (n.skin || "layui-layer-hui")), n;
+      }()));
+    },
+    load: function load(e, t) {
+      return r.open(i.extend({
+        type: 3,
+        icon: e || 0,
+        resize: !1,
+        shade: .01
+      }, t));
+    },
+    tips: function tips(e, t, n) {
+      return r.open(i.extend({
+        type: 4,
+        content: [e, t],
+        closeBtn: !1,
+        time: 3e3,
+        shade: !1,
+        resize: !1,
+        fixed: !1,
+        maxWidth: 260
+      }, n));
+    }
+  },
+      s = function s(e) {
+    var t = this,
+        a = function a() {
+      t.creat();
+    };
+
+    t.index = ++r.index, t.config.maxWidth = i(n).width() - 30, t.config = i.extend({}, t.config, o.config, e), document.body ? a() : setTimeout(function () {
+      a();
+    }, 30);
+  };
+
+  s.pt = s.prototype;
+  var l = ["layui-layer", ".layui-layer-title", ".layui-layer-main", ".layui-layer-dialog", "layui-layer-iframe", "layui-layer-content", "layui-layer-btn", "layui-layer-close"];
+  l.anim = ["layer-anim-00", "layer-anim-01", "layer-anim-02", "layer-anim-03", "layer-anim-04", "layer-anim-05", "layer-anim-06"], l.SHADE = "layui-layer-shade", l.MOVE = "layui-layer-move", s.pt.config = {
+    type: 0,
+    shade: .3,
+    fixed: !0,
+    move: l[1],
+    title: "&#x4FE1;&#x606F;",
+    offset: "auto",
+    area: "auto",
+    closeBtn: 1,
+    time: 0,
+    zIndex: 19891014,
+    maxWidth: 360,
+    anim: 0,
+    isOutAnim: !0,
+    minStack: !0,
+    icon: -1,
+    moveType: 1,
+    resize: !0,
+    scrollbar: !0,
+    tips: 2
+  }, s.pt.vessel = function (e, t) {
+    var n = this,
+        a = n.index,
+        r = n.config,
+        s = r.zIndex + a,
+        f = "object" == _typeof(r.title),
+        c = r.maxmin && (1 === r.type || 2 === r.type),
+        u = r.title ? '<div class="layui-layer-title" style="' + (f ? r.title[1] : "") + '">' + (f ? r.title[0] : r.title) + "</div>" : "";
+
+    return r.zIndex = s, t([r.shade ? '<div class="' + l.SHADE + '" id="' + l.SHADE + a + '" times="' + a + '" style="' + ("z-index:" + (s - 1) + "; ") + '"></div>' : "", '<div class="' + l[0] + (" layui-layer-" + o.type[r.type]) + (0 != r.type && 2 != r.type || r.shade ? "" : " layui-layer-border") + " " + (r.skin || "") + '" id="' + l[0] + a + '" type="' + o.type[r.type] + '" times="' + a + '" showtime="' + r.time + '" conType="' + (e ? "object" : "string") + '" style="z-index: ' + s + "; width:" + r.area[0] + ";height:" + r.area[1] + ";position:" + (r.fixed ? "fixed;" : "absolute;") + '">' + (e && 2 != r.type ? "" : u) + '<div id="' + (r.id || "") + '" class="layui-layer-content' + (0 == r.type && r.icon !== -1 ? " layui-layer-padding" : "") + (3 == r.type ? " layui-layer-loading" + r.icon : "") + '">' + (0 == r.type && r.icon !== -1 ? '<i class="layui-layer-ico layui-layer-ico' + r.icon + '"></i>' : "") + (1 == r.type && e ? "" : r.content || "") + '</div><span class="layui-layer-setwin">' + function () {
+      var e = c ? '<a class="layui-layer-min" href="javascript:;"><cite></cite></a><a class="layui-layer-ico layui-layer-max" href="javascript:;"></a>' : "";
+      return r.closeBtn && (e += '<a class="layui-layer-ico ' + l[7] + " " + l[7] + (r.title ? r.closeBtn : 4 == r.type ? "1" : "2") + '" href="javascript:;"></a>'), e;
+    }() + "</span>" + (r.btn ? function () {
+      var e = "";
+      "string" == typeof r.btn && (r.btn = [r.btn]);
+
+      for (var t = 0, i = r.btn.length; t < i; t++) {
+        e += '<a class="' + l[6] + t + '">' + r.btn[t] + "</a>";
+      }
+
+      return '<div class="' + l[6] + " layui-layer-btn-" + (r.btnAlign || "") + '">' + e + "</div>";
+    }() : "") + (r.resize ? '<span class="layui-layer-resize"></span>' : "") + "</div>"], u, i('<div class="' + l.MOVE + '" id="' + l.MOVE + '"></div>')), n;
+  }, s.pt.creat = function () {
+    var e = this,
+        t = e.config,
+        a = e.index,
+        s = t.content,
+        f = "object" == _typeof(s),
+        c = i("body");
+
+    if (!t.id || !i("#" + t.id)[0]) {
+      switch ("string" == typeof t.area && (t.area = "auto" === t.area ? ["", ""] : [t.area, ""]), t.shift && (t.anim = t.shift), 6 == r.ie && (t.fixed = !1), t.type) {
+        case 0:
+          t.btn = "btn" in t ? t.btn : o.btn[0], r.closeAll("dialog");
+          break;
+
+        case 2:
+          var s = t.content = f ? t.content : [t.content || "", "auto"];
+          t.content = '<iframe scrolling="' + (t.content[1] || "auto") + '" allowtransparency="true" id="' + l[4] + a + '" name="' + l[4] + a + '" onload="this.className=\'\';" class="layui-layer-load" frameborder="0" src="' + t.content[0] + '"></iframe>';
+          break;
+
+        case 3:
+          delete t.title, delete t.closeBtn, t.icon === -1 && 0 === t.icon, r.closeAll("loading");
+          break;
+
+        case 4:
+          f || (t.content = [t.content, "body"]), t.follow = t.content[1], t.content = t.content[0] + '<i class="layui-layer-TipsG"></i>', delete t.title, t.tips = "object" == _typeof(t.tips) ? t.tips : [t.tips, !0], t.tipsMore || r.closeAll("tips");
+      }
+
+      if (e.vessel(f, function (n, r, u) {
+        c.append(n[0]), f ? function () {
+          2 == t.type || 4 == t.type ? function () {
+            i("body").append(n[1]);
+          }() : function () {
+            s.parents("." + l[0])[0] || (s.data("display", s.css("display")).show().addClass("layui-layer-wrap").wrap(n[1]), i("#" + l[0] + a).find("." + l[5]).before(r));
+          }();
+        }() : c.append(n[1]), i("#" + l.MOVE)[0] || c.append(o.moveElem = u), e.layero = i("#" + l[0] + a), e.shadeo = i("#" + l.SHADE + a), t.scrollbar || l.html.css("overflow", "hidden").attr("layer-full", a);
+      }).auto(a), e.shadeo.css({
+        "background-color": t.shade[1] || "#000",
+        opacity: t.shade[0] || t.shade
+      }), 2 == t.type && 6 == r.ie && e.layero.find("iframe").attr("src", s[0]), 4 == t.type ? e.tips() : function () {
+        e.offset(), parseInt(o.getStyle(document.getElementById(l.MOVE), "z-index")) || function () {
+          e.layero.css("visibility", "hidden"), r.ready(function () {
+            e.offset(), e.layero.css("visibility", "visible");
+          });
+        }();
+      }(), t.fixed && n.on("resize", function () {
+        e.offset(), (/^\d+%$/.test(t.area[0]) || /^\d+%$/.test(t.area[1])) && e.auto(a), 4 == t.type && e.tips();
+      }), t.time <= 0 || setTimeout(function () {
+        r.close(e.index);
+      }, t.time), e.move().callback(), l.anim[t.anim]) {
+        var u = "layer-anim " + l.anim[t.anim];
+        e.layero.addClass(u).one("webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend", function () {
+          i(this).removeClass(u);
+        });
+      }
+
+      t.isOutAnim && e.layero.data("isOutAnim", !0);
+    }
+  }, s.pt.auto = function (e) {
+    var t = this,
+        a = t.config,
+        o = i("#" + l[0] + e);
+    "" === a.area[0] && a.maxWidth > 0 && (r.ie && r.ie < 8 && a.btn && o.width(o.innerWidth()), o.outerWidth() > a.maxWidth && o.width(a.maxWidth));
+
+    var s = [o.innerWidth(), o.innerHeight()],
+        f = o.find(l[1]).outerHeight() || 0,
+        c = o.find("." + l[6]).outerHeight() || 0,
+        u = function u(e) {
+      e = o.find(e), e.height(s[1] - f - c - 2 * (0 | parseFloat(e.css("padding-top"))));
+    };
+
+    switch (a.type) {
+      case 2:
+        u("iframe");
+        break;
+
+      default:
+        "" === a.area[1] ? a.maxHeight > 0 && o.outerHeight() > a.maxHeight ? (s[1] = a.maxHeight, u("." + l[5])) : a.fixed && s[1] >= n.height() && (s[1] = n.height(), u("." + l[5])) : u("." + l[5]);
+    }
+
+    return t;
+  }, s.pt.offset = function () {
+    var e = this,
+        t = e.config,
+        i = e.layero,
+        a = [i.outerWidth(), i.outerHeight()],
+        o = "object" == _typeof(t.offset);
+
+    e.offsetTop = (n.height() - a[1]) / 2, e.offsetLeft = (n.width() - a[0]) / 2, o ? (e.offsetTop = t.offset[0], e.offsetLeft = t.offset[1] || e.offsetLeft) : "auto" !== t.offset && ("t" === t.offset ? e.offsetTop = 0 : "r" === t.offset ? e.offsetLeft = n.width() - a[0] : "b" === t.offset ? e.offsetTop = n.height() - a[1] : "l" === t.offset ? e.offsetLeft = 0 : "lt" === t.offset ? (e.offsetTop = 0, e.offsetLeft = 0) : "lb" === t.offset ? (e.offsetTop = n.height() - a[1], e.offsetLeft = 0) : "rt" === t.offset ? (e.offsetTop = 0, e.offsetLeft = n.width() - a[0]) : "rb" === t.offset ? (e.offsetTop = n.height() - a[1], e.offsetLeft = n.width() - a[0]) : e.offsetTop = t.offset), t.fixed || (e.offsetTop = /%$/.test(e.offsetTop) ? n.height() * parseFloat(e.offsetTop) / 100 : parseFloat(e.offsetTop), e.offsetLeft = /%$/.test(e.offsetLeft) ? n.width() * parseFloat(e.offsetLeft) / 100 : parseFloat(e.offsetLeft), e.offsetTop += n.scrollTop(), e.offsetLeft += n.scrollLeft()), i.attr("minLeft") && (e.offsetTop = n.height() - (i.find(l[1]).outerHeight() || 0), e.offsetLeft = i.css("left")), i.css({
+      top: e.offsetTop,
+      left: e.offsetLeft
+    });
+  }, s.pt.tips = function () {
+    var e = this,
+        t = e.config,
+        a = e.layero,
+        o = [a.outerWidth(), a.outerHeight()],
+        r = i(t.follow);
+    r[0] || (r = i("body"));
+    var s = {
+      width: r.outerWidth(),
+      height: r.outerHeight(),
+      top: r.offset().top,
+      left: r.offset().left
+    },
+        f = a.find(".layui-layer-TipsG"),
+        c = t.tips[0];
+    t.tips[1] || f.remove(), s.autoLeft = function () {
+      s.left + o[0] - n.width() > 0 ? (s.tipLeft = s.left + s.width - o[0], f.css({
+        right: 12,
+        left: "auto"
+      })) : s.tipLeft = s.left;
+    }, s.where = [function () {
+      s.autoLeft(), s.tipTop = s.top - o[1] - 10, f.removeClass("layui-layer-TipsB").addClass("layui-layer-TipsT").css("border-right-color", t.tips[1]);
+    }, function () {
+      s.tipLeft = s.left + s.width + 10, s.tipTop = s.top, f.removeClass("layui-layer-TipsL").addClass("layui-layer-TipsR").css("border-bottom-color", t.tips[1]);
+    }, function () {
+      s.autoLeft(), s.tipTop = s.top + s.height + 10, f.removeClass("layui-layer-TipsT").addClass("layui-layer-TipsB").css("border-right-color", t.tips[1]);
+    }, function () {
+      s.tipLeft = s.left - o[0] - 10, s.tipTop = s.top, f.removeClass("layui-layer-TipsR").addClass("layui-layer-TipsL").css("border-bottom-color", t.tips[1]);
+    }], s.where[c - 1](), 1 === c ? s.top - (n.scrollTop() + o[1] + 16) < 0 && s.where[2]() : 2 === c ? n.width() - (s.left + s.width + o[0] + 16) > 0 || s.where[3]() : 3 === c ? s.top - n.scrollTop() + s.height + o[1] + 16 - n.height() > 0 && s.where[0]() : 4 === c && o[0] + 16 - s.left > 0 && s.where[1](), a.find("." + l[5]).css({
+      "background-color": t.tips[1],
+      "padding-right": t.closeBtn ? "30px" : ""
+    }), a.css({
+      left: s.tipLeft - (t.fixed ? n.scrollLeft() : 0),
+      top: s.tipTop - (t.fixed ? n.scrollTop() : 0)
+    });
+  }, s.pt.move = function () {
+    var e = this,
+        t = e.config,
+        a = i(document),
+        s = e.layero,
+        l = s.find(t.move),
+        f = s.find(".layui-layer-resize"),
+        c = {};
+    return t.move && l.css("cursor", "move"), l.on("mousedown", function (e) {
+      e.preventDefault(), t.move && (c.moveStart = !0, c.offset = [e.clientX - parseFloat(s.css("left")), e.clientY - parseFloat(s.css("top"))], o.moveElem.css("cursor", "move").show());
+    }), f.on("mousedown", function (e) {
+      e.preventDefault(), c.resizeStart = !0, c.offset = [e.clientX, e.clientY], c.area = [s.outerWidth(), s.outerHeight()], o.moveElem.css("cursor", "se-resize").show();
+    }), a.on("mousemove", function (i) {
+      if (c.moveStart) {
+        var a = i.clientX - c.offset[0],
+            o = i.clientY - c.offset[1],
+            l = "fixed" === s.css("position");
+
+        if (i.preventDefault(), c.stX = l ? 0 : n.scrollLeft(), c.stY = l ? 0 : n.scrollTop(), !t.moveOut) {
+          var f = n.width() - s.outerWidth() + c.stX,
+              u = n.height() - s.outerHeight() + c.stY;
+          a < c.stX && (a = c.stX), a > f && (a = f), o < c.stY && (o = c.stY), o > u && (o = u);
+        }
+
+        s.css({
+          left: a,
+          top: o
+        });
+      }
+
+      if (t.resize && c.resizeStart) {
+        var a = i.clientX - c.offset[0],
+            o = i.clientY - c.offset[1];
+        i.preventDefault(), r.style(e.index, {
+          width: c.area[0] + a,
+          height: c.area[1] + o
+        }), c.isResize = !0, t.resizing && t.resizing(s);
+      }
+    }).on("mouseup", function (e) {
+      c.moveStart && (delete c.moveStart, o.moveElem.hide(), t.moveEnd && t.moveEnd(s)), c.resizeStart && (delete c.resizeStart, o.moveElem.hide());
+    }), e;
+  }, s.pt.callback = function () {
+    function e() {
+      var e = a.cancel && a.cancel(t.index, n);
+      e === !1 || r.close(t.index);
+    }
+
+    var t = this,
+        n = t.layero,
+        a = t.config;
+    t.openLayer(), a.success && (2 == a.type ? n.find("iframe").on("load", function () {
+      a.success(n, t.index);
+    }) : a.success(n, t.index)), 6 == r.ie && t.IE6(n), n.find("." + l[6]).children("a").on("click", function () {
+      var e = i(this).index();
+      if (0 === e) a.yes ? a.yes(t.index, n) : a.btn1 ? a.btn1(t.index, n) : r.close(t.index);else {
+        var o = a["btn" + (e + 1)] && a["btn" + (e + 1)](t.index, n);
+        o === !1 || r.close(t.index);
+      }
+    }), n.find("." + l[7]).on("click", e), a.shadeClose && t.shadeo.on("click", function () {
+      r.close(t.index);
+    }), n.find(".layui-layer-min").on("click", function () {
+      var e = a.min && a.min(n, t.index);
+      e === !1 || r.min(t.index, a);
+    }), n.find(".layui-layer-max").on("click", function () {
+      i(this).hasClass("layui-layer-maxmin") ? (r.restore(t.index), a.restore && a.restore(n, t.index)) : (r.full(t.index, a), setTimeout(function () {
+        a.full && a.full(n, t.index);
+      }, 100));
+    }), a.end && (o.end[t.index] = a.end);
+  }, o.reselect = function () {
+    i.each(i("select"), function (e, t) {
+      var n = i(this);
+      n.parents("." + l[0])[0] || 1 == n.attr("layer") && i("." + l[0]).length < 1 && n.removeAttr("layer").show(), n = null;
+    });
+  }, s.pt.IE6 = function (e) {
+    i("select").each(function (e, t) {
+      var n = i(this);
+      n.parents("." + l[0])[0] || "none" === n.css("display") || n.attr({
+        layer: "1"
+      }).hide(), n = null;
+    });
+  }, s.pt.openLayer = function () {
+    var e = this;
+    r.zIndex = e.config.zIndex, r.setTop = function (e) {
+      var t = function t() {
+        r.zIndex++, e.css("z-index", r.zIndex + 1);
+      };
+
+      return r.zIndex = parseInt(e[0].style.zIndex), e.on("mousedown", t), r.zIndex;
+    };
+  }, o.record = function (e) {
+    var t = [e.width(), e.height(), e.position().top, e.position().left + parseFloat(e.css("margin-left"))];
+    e.find(".layui-layer-max").addClass("layui-layer-maxmin"), e.attr({
+      area: t
+    });
+  }, o.rescollbar = function (e) {
+    l.html.attr("layer-full") == e && (l.html[0].style.removeProperty ? l.html[0].style.removeProperty("overflow") : l.html[0].style.removeAttribute("overflow"), l.html.removeAttr("layer-full"));
+  }, e.layer = r, r.getChildFrame = function (e, t) {
+    return t = t || i("." + l[4]).attr("times"), i("#" + l[0] + t).find("iframe").contents().find(e);
+  }, r.getFrameIndex = function (e) {
+    return i("#" + e).parents("." + l[4]).attr("times");
+  }, r.iframeAuto = function (e) {
+    if (e) {
+      var t = r.getChildFrame("html", e).outerHeight(),
+          n = i("#" + l[0] + e),
+          a = n.find(l[1]).outerHeight() || 0,
+          o = n.find("." + l[6]).outerHeight() || 0;
+      n.css({
+        height: t + a + o
+      }), n.find("iframe").css({
+        height: t
+      });
+    }
+  }, r.iframeSrc = function (e, t) {
+    i("#" + l[0] + e).find("iframe").attr("src", t);
+  }, r.style = function (e, t, n) {
+    var a = i("#" + l[0] + e),
+        r = a.find(".layui-layer-content"),
+        s = a.attr("type"),
+        f = a.find(l[1]).outerHeight() || 0,
+        c = a.find("." + l[6]).outerHeight() || 0;
+    a.attr("minLeft");
+    s !== o.type[3] && s !== o.type[4] && (n || (parseFloat(t.width) <= 260 && (t.width = 260), parseFloat(t.height) - f - c <= 64 && (t.height = 64 + f + c)), a.css(t), c = a.find("." + l[6]).outerHeight(), s === o.type[2] ? a.find("iframe").css({
+      height: parseFloat(t.height) - f - c
+    }) : r.css({
+      height: parseFloat(t.height) - f - c - parseFloat(r.css("padding-top")) - parseFloat(r.css("padding-bottom"))
+    }));
+  }, r.min = function (e, t) {
+    t = t || {};
+    var a = i("#" + l[0] + e),
+        s = i("#" + l.SHADE + e),
+        f = a.find(l[1]).outerHeight() || 0,
+        c = a.attr("minLeft") || 181 * o.minIndex + "px",
+        u = a.css("position"),
+        d = {
+      width: 180,
+      height: f,
+      position: "fixed",
+      overflow: "hidden"
+    };
+    o.record(a), o.minLeft[0] && (c = o.minLeft[0], o.minLeft.shift()), t.minStack && (d.left = c, d.top = n.height() - f, a.attr("minLeft") || o.minIndex++, a.attr("minLeft", c)), a.attr("position", u), r.style(e, d, !0), a.find(".layui-layer-min").hide(), "page" === a.attr("type") && a.find(l[4]).hide(), o.rescollbar(e), s.hide();
+  }, r.restore = function (e) {
+    var t = i("#" + l[0] + e),
+        n = i("#" + l.SHADE + e),
+        a = t.attr("area").split(",");
+    t.attr("type");
+    r.style(e, {
+      width: parseFloat(a[0]),
+      height: parseFloat(a[1]),
+      top: parseFloat(a[2]),
+      left: parseFloat(a[3]),
+      position: t.attr("position"),
+      overflow: "visible"
+    }, !0), t.find(".layui-layer-max").removeClass("layui-layer-maxmin"), t.find(".layui-layer-min").show(), "page" === t.attr("type") && t.find(l[4]).show(), o.rescollbar(e), n.show();
+  }, r.full = function (e) {
+    var t,
+        a = i("#" + l[0] + e);
+    o.record(a), l.html.attr("layer-full") || l.html.css("overflow", "hidden").attr("layer-full", e), clearTimeout(t), t = setTimeout(function () {
+      var t = "fixed" === a.css("position");
+      r.style(e, {
+        top: t ? 0 : n.scrollTop(),
+        left: t ? 0 : n.scrollLeft(),
+        width: n.width(),
+        height: n.height()
+      }, !0), a.find(".layui-layer-min").hide();
+    }, 100);
+  }, r.title = function (e, t) {
+    var n = i("#" + l[0] + (t || r.index)).find(l[1]);
+    n.html(e);
+  }, r.close = function (e, t) {
+    var n = i("#" + l[0] + e),
+        a = n.attr("type"),
+        s = "layer-anim-close";
+
+    if (n[0]) {
+      var f = "layui-layer-wrap",
+          c = function c() {
+        if (a === o.type[1] && "object" === n.attr("conType")) {
+          n.children(":not(." + l[5] + ")").remove();
+
+          for (var r = n.find("." + f), s = 0; s < 2; s++) {
+            r.unwrap();
+          }
+
+          r.css("display", r.data("display")).removeClass(f);
+        } else {
+          if (a === o.type[2]) try {
+            var c = i("#" + l[4] + e)[0];
+            c.contentWindow.document.write(""), c.contentWindow.close(), n.find("." + l[5])[0].removeChild(c);
+          } catch (u) {}
+          n[0].innerHTML = "", n.remove();
+        }
+
+        "function" == typeof o.end[e] && o.end[e](), delete o.end[e], "function" == typeof t && t();
+      };
+
+      n.data("isOutAnim") && n.addClass("layer-anim " + s), i("#layui-layer-moves, #" + l.SHADE + e).remove(), 6 == r.ie && o.reselect(), o.rescollbar(e), n.attr("minLeft") && (o.minIndex--, o.minLeft.push(n.attr("minLeft"))), r.ie && r.ie < 10 || !n.data("isOutAnim") ? c() : setTimeout(function () {
+        c();
+      }, 200);
+    }
+  }, r.closeAll = function (e, t) {
+    "function" == typeof e && (t = e, e = null);
+    var n = i("." + l[0]);
+    i.each(n, function (a) {
+      var o = i(this),
+          s = e ? o.attr("type") === e : 1;
+      s && r.close(o.attr("times"), a === n.length - 1 ? t : null), s = null;
+    }), 0 === n.length && "function" == typeof t && t();
+  };
+
+  var f = r.cache || {},
+      c = function c(e) {
+    return f.skin ? " " + f.skin + " " + f.skin + "-" + e : "";
+  };
+
+  r.prompt = function (e, t) {
+    var a = "";
+
+    if (e = e || {}, "function" == typeof e && (t = e), e.area) {
+      var o = e.area;
+      a = 'style="width: ' + o[0] + "; height: " + o[1] + ';"', delete e.area;
+    }
+
+    var s,
+        l = 2 == e.formType ? '<textarea class="layui-layer-input"' + a + "></textarea>" : function () {
+      return '<input type="' + (1 == e.formType ? "password" : "text") + '" class="layui-layer-input">';
+    }(),
+        f = e.success;
+    return delete e.success, r.open(i.extend({
+      type: 1,
+      btn: ["&#x786E;&#x5B9A;", "&#x53D6;&#x6D88;"],
+      content: l,
+      skin: "layui-layer-prompt" + c("prompt"),
+      maxWidth: n.width(),
+      success: function success(t) {
+        s = t.find(".layui-layer-input"), s.val(e.value || "").focus(), "function" == typeof f && f(t);
+      },
+      resize: !1,
+      yes: function yes(i) {
+        var n = s.val();
+        "" === n ? s.focus() : n.length > (e.maxlength || 500) ? r.tips("&#x6700;&#x591A;&#x8F93;&#x5165;" + (e.maxlength || 500) + "&#x4E2A;&#x5B57;&#x6570;", s, {
+          tips: 1
+        }) : t && t(n, i, s);
+      }
+    }, e));
+  }, r.tab = function (e) {
+    e = e || {};
+    var t = e.tab || {},
+        n = "layui-this",
+        a = e.success;
+    return delete e.success, r.open(i.extend({
+      type: 1,
+      skin: "layui-layer-tab" + c("tab"),
+      resize: !1,
+      title: function () {
+        var e = t.length,
+            i = 1,
+            a = "";
+        if (e > 0) for (a = '<span class="' + n + '">' + t[0].title + "</span>"; i < e; i++) {
+          a += "<span>" + t[i].title + "</span>";
+        }
+        return a;
+      }(),
+      content: '<ul class="layui-layer-tabmain">' + function () {
+        var e = t.length,
+            i = 1,
+            a = "";
+        if (e > 0) for (a = '<li class="layui-layer-tabli ' + n + '">' + (t[0].content || "no content") + "</li>"; i < e; i++) {
+          a += '<li class="layui-layer-tabli">' + (t[i].content || "no  content") + "</li>";
+        }
+        return a;
+      }() + "</ul>",
+      success: function success(t) {
+        var o = t.find(".layui-layer-title").children(),
+            r = t.find(".layui-layer-tabmain").children();
+        o.on("mousedown", function (t) {
+          t.stopPropagation ? t.stopPropagation() : t.cancelBubble = !0;
+          var a = i(this),
+              o = a.index();
+          a.addClass(n).siblings().removeClass(n), r.eq(o).show().siblings().hide(), "function" == typeof e.change && e.change(o);
+        }), "function" == typeof a && a(t);
+      }
+    }, e));
+  }, r.photos = function (t, n, a) {
+    function o(e, t, i) {
+      var n = new Image();
+      return n.src = e, n.complete ? t(n) : (n.onload = function () {
+        n.onload = null, t(n);
+      }, void (n.onerror = function (e) {
+        n.onerror = null, i(e);
+      }));
+    }
+
+    var s = {};
+
+    if (t = t || {}, t.photos) {
+      var l = !("string" == typeof t.photos || t.photos instanceof i),
+          f = l ? t.photos : {},
+          u = f.data || [],
+          d = f.start || 0;
+      s.imgIndex = (0 | d) + 1, t.img = t.img || "img";
+      var y = t.success;
+
+      if (delete t.success, l) {
+        if (0 === u.length) return r.msg("&#x6CA1;&#x6709;&#x56FE;&#x7247;");
+      } else {
+        var p = i(t.photos),
+            h = function h() {
+          u = [], p.find(t.img).each(function (e) {
+            var t = i(this);
+            t.attr("layer-index", e), u.push({
+              alt: t.attr("alt"),
+              pid: t.attr("layer-pid"),
+              src: t.attr("layer-src") || t.attr("src"),
+              thumb: t.attr("src")
+            });
+          });
+        };
+
+        if (h(), 0 === u.length) return;
+        if (n || p.on("click", t.img, function () {
+          h();
+          var e = i(this),
+              n = e.attr("layer-index");
+          r.photos(i.extend(t, {
+            photos: {
+              start: n,
+              data: u,
+              tab: t.tab
+            },
+            full: t.full
+          }), !0);
+        }), !n) return;
+      }
+
+      s.imgprev = function (e) {
+        s.imgIndex--, s.imgIndex < 1 && (s.imgIndex = u.length), s.tabimg(e);
+      }, s.imgnext = function (e, t) {
+        s.imgIndex++, s.imgIndex > u.length && (s.imgIndex = 1, t) || s.tabimg(e);
+      }, s.keyup = function (e) {
+        if (!s.end) {
+          var t = e.keyCode;
+          e.preventDefault(), 37 === t ? s.imgprev(!0) : 39 === t ? s.imgnext(!0) : 27 === t && r.close(s.index);
+        }
+      }, s.tabimg = function (e) {
+        if (!(u.length <= 1)) return f.start = s.imgIndex - 1, r.close(s.index), r.photos(t, !0, e);
+      }, s.event = function () {
+        s.bigimg.find(".layui-layer-imgprev").on("click", function (e) {
+          e.preventDefault(), s.imgprev(!0);
+        }), s.bigimg.find(".layui-layer-imgnext").on("click", function (e) {
+          e.preventDefault(), s.imgnext(!0);
+        }), i(document).on("keyup", s.keyup);
+      }, s.loadi = r.load(1, {
+        shade: !("shade" in t) && .9,
+        scrollbar: !1
+      }), o(u[d].src, function (n) {
+        r.close(s.loadi), a && (t.anim = -1), s.index = r.open(i.extend({
+          type: 1,
+          id: "layui-layer-photos",
+          area: function () {
+            var a = [n.width, n.height],
+                o = [i(e).width() - 100, i(e).height() - 100];
+
+            if (!t.full && (a[0] > o[0] || a[1] > o[1])) {
+              var r = [a[0] / o[0], a[1] / o[1]];
+              r[0] > r[1] ? (a[0] = a[0] / r[0], a[1] = a[1] / r[0]) : r[0] < r[1] && (a[0] = a[0] / r[1], a[1] = a[1] / r[1]);
+            }
+
+            return [a[0] + "px", a[1] + "px"];
+          }(),
+          title: !1,
+          shade: .9,
+          shadeClose: !0,
+          closeBtn: !1,
+          move: ".layui-layer-phimg img",
+          moveType: 1,
+          scrollbar: !1,
+          moveOut: !0,
+          anim: 5,
+          isOutAnim: !1,
+          skin: "layui-layer-photos" + c("photos"),
+          content: '<div class="layui-layer-phimg"><img src="' + u[d].src + '" alt="' + (u[d].alt || "") + '" layer-pid="' + u[d].pid + '">' + function () {
+            return u.length > 1 ? '<div class="layui-layer-imgsee"><span class="layui-layer-imguide"><a href="javascript:;" class="layui-layer-iconext layui-layer-imgprev"></a><a href="javascript:;" class="layui-layer-iconext layui-layer-imgnext"></a></span><div class="layui-layer-imgbar" style="display:' + (a ? "block" : "") + '"><span class="layui-layer-imgtit"><a href="javascript:;">' + (u[d].alt || "") + "</a><em>" + s.imgIndex + " / " + u.length + "</em></span></div></div>" : "";
+          }() + "</div>",
+          success: function success(e, i) {
+            s.bigimg = e.find(".layui-layer-phimg"), s.imgsee = e.find(".layui-layer-imgbar"), s.event(e), t.tab && t.tab(u[d], e), "function" == typeof y && y(e);
+          },
+          end: function end() {
+            s.end = !0, i(document).off("keyup", s.keyup);
+          }
+        }, t));
+      }, function () {
+        r.close(s.loadi), r.msg("&#x5F53;&#x524D;&#x56FE;&#x7247;&#x5730;&#x5740;&#x5F02;&#x5E38;<br>&#x662F;&#x5426;&#x7EE7;&#x7EED;&#x67E5;&#x770B;&#x4E0B;&#x4E00;&#x5F20;&#xFF1F;", {
+          time: 3e4,
+          btn: ["&#x4E0B;&#x4E00;&#x5F20;", "&#x4E0D;&#x770B;&#x4E86;"],
+          yes: function yes() {
+            u.length > 1 && s.imgnext(!0, !0);
+          }
+        });
+      });
+    }
+  }, o.run = function (t) {
+    i = t, n = i(e), l.html = i("html"), r.open = function (e) {
+      var t = new s(e);
+      return t.index;
+    };
+  }, e.layui && layui.define ? (r.ready(), layui.define("jquery", function (t) {
+    r.path = layui.cache.dir, o.run(layui.$), e.layer = r, t("layer", r);
+  })) :  true ? !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! jquery */ "./node_modules/jquery/dist/jquery.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+    return o.run(e.jQuery), r;
+  }).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)) : 0;
+}(window);
+
+/***/ }),
+
+/***/ "./resources/js/pjax.js":
+/*!******************************!*\
+  !*** ./resources/js/pjax.js ***!
+  \******************************/
+/***/ (() => {
+
+//定义加载区域
+$(document).pjax('a[target!=_blank]', 'body'); //定义pjax有效时间，超过这个时间会整页刷新
+
+$.pjax.defaults.timeout = 1200; //显示加载动画
+
+var index;
+$(document).on('pjax:click', function () {
+  index = layer.load(1, {
+    shade: [0.1, '#000'] //0.1透明度的白色背景
+
+  });
+}); //隐藏加载动画
+
+$(document).on('pjax:end', function () {
+  layer.close(index);
 });
 
 /***/ }),
@@ -49869,7 +51515,7 @@ module.exports = JSON.parse('{"86":{"110000":"北京市","120000":"天津市","1
 /******/ 				if(__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
 /******/ 					installedChunks[chunkId][0]();
 /******/ 				}
-/******/ 				installedChunks[chunkIds[i]] = 0;
+/******/ 				installedChunks[chunkId] = 0;
 /******/ 			}
 /******/ 			return __webpack_require__.O(result);
 /******/ 		}

@@ -23,6 +23,7 @@
         "laravel/ui": "3.0",
         "moontoast/math": "^1.2",
         "overtrue/laravel-lang": "^5.0",
+        "spatie/laravel-pjax": "^2.2",
         "yansongda/pay": "2.10.2"
     },
     "require-dev": {
