@@ -9,12 +9,14 @@ require('./jquery.pjax.min')
 require('./layer')
 require('./pjax')
 
-window.Vue = require('vue').default;
+window.onload = function () {
+  window.Vue = require('vue').default;
 
 // 此处需在引入 Vue 之后引入
-require('./components/SelectDistrict');
-require('./components/UserAddressesCreateAndEdit');
-
-const app = new Vue({
+  require('./components/SelectDistrict');
+  require('./components/UserAddressesCreateAndEdit');
+  const app = new Vue({
     el: '#app',
-});
+  });
+}
+
