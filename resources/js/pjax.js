@@ -11,7 +11,8 @@ $(document).on('pjax:click', function () {
 });
 //隐藏加载动画
 $(document).on('pjax:end', function () {
-  $.getScript("js/app.js");
+  //todo 临时解决
+  $.getScript(window.location.protocol+"//"+window.location.host+"/js/app.js");
   layer.close(index);
   layer.msg('加载成功')
 });
