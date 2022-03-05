@@ -3945,7 +3945,9 @@ $(document).on('pjax:click', function () {
 }); //隐藏加载动画
 
 $(document).on('pjax:end', function () {
+  $.getScript("js/app.js");
   layer.close(index);
+  layer.msg('加载成功');
 });
 
 /***/ }),

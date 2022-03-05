@@ -3,7 +3,9 @@
 
 // Bootstrap
 @import '~bootstrap/scss/bootstrap';
+
 @import "~@fortawesome/fontawesome-free/css/all.css";
+
 /* universal */
 
 body {
@@ -57,53 +59,7 @@ body {
   }
 }
 
-.products-index-page,.products-favorites-page  {
-  .pagination {
-    margin-right: 5px;
-  }
-  .search-form {
-    padding: 0 20px 10px;
-    border-bottom: 1px solid #eee;
-    .all-products {
-      font-size: 12px;
-      color: #666;
-      text-decoration: none;
-    }
-    .category {
-      font-size: 12px;
-      height: 22px;
-      border: 1px solid #eee;
-      padding: 4px;
-      color: #666;
-      a {
-        text-decoration: none;
-        color: #666;
-      }
-    }
-  }
-  .filters {
-    font-size: 12px;
-    margin-bottom: 10px;
-    &>.row {
-      border-bottom: 1px solid #eee;
-      .filter-key {
-        width: 150px;
-        padding-top: 5px;
-        padding-bottom: 5px;
-        background: #f3f3f3;
-        color: #666;
-      }
-      .filter-values {
-        padding-top: 5px;
-        padding-bottom: 5px;
-        a {
-          margin-right: 50px;
-          color: #666;
-          text-decoration: none;
-        }
-      }
-    }
-  }
+@mixin product-list {
   .products-list {
     padding: 0 15px;
     .product-item {
@@ -162,6 +118,78 @@ body {
     }
   }
 }
+
+.products-index-page, .products-favorites-page {
+  .pagination {
+    margin-right: 5px;
+  }
+  // scss 的 @include 用于引用一段样式
+  @include product-list;
+
+  .search-form {
+    padding: 0 5px 10px;
+    .category-breadcrumb {
+      line-height: 28px;
+    }
+    .all-products {
+      font-size: 12px;
+      color: #666;
+      text-decoration: none;
+    }
+    .category {
+      font-size: 12px;
+      height: 22px;
+      border: 1px solid #eee;
+      padding: 4px;
+      color: #666;
+      a {
+        text-decoration: none;
+        color: #666;
+      }
+    }
+    .filter {
+      border: 1px red solid;
+      font-size: 12px;
+      padding: 2px 0 2px 2px;
+      .filter-value {
+        color: red;
+      }
+      .remove-filter {
+        text-decoration: none;
+        color: white;
+        font-weight: bold;
+        background: red;
+        padding: 2px;
+      }
+    }
+  }
+  .filters {
+    font-size: 12px;
+    margin-bottom: 10px;
+    &>.row {
+      border-top: 1px solid #eee;
+      border-bottom: 1px solid #eee;
+      margin: 0 -20px;
+      .filter-key {
+        width: 150px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+        background: #f3f3f3;
+        color: #666;
+      }
+      .filter-values {
+        padding-top: 5px;
+        padding-bottom: 5px;
+        a {
+          margin-right: 50px;
+          color: #666;
+          text-decoration: none;
+        }
+      }
+    }
+  }
+}
+
 .products-show-page {
   .cover {
     width: 100%;
@@ -332,7 +360,19 @@ body {
   .product-description img {
     max-width: 100%;
   }
+
+
+  .similar-products {
+    @include product-list;
+    .title {
+      font-weight: normal;
+    }
+    .price {
+      background-color: unset;
+    }
+  }
 }
+
 .cart-index-page {
   .product_list {
     .preview {
@@ -378,6 +418,7 @@ body {
     }
   }
 }
+
 .orders-index-page {
   .list-group-item {
     font-size: 12px;
@@ -422,6 +463,8 @@ body {
     }
   }
 }
+
+
 .orders-show-page {
   font-size: 12px;
   .vertical-middle {
@@ -487,12 +530,24 @@ body {
       padding-right: 20px;
     }
   }
-  .payment-buttons, .receive-button, .refund-button {
+
+  .payment-buttons {
     margin-top: 10px;
     padding-right: 10px;
   }
 
+  .payment-buttons, .receive-button {
+    margin-top: 10px;
+    padding-right: 10px;
+  }
+
+  .payment-buttons, .receive-button, .refund-button {
+    margin-top: 10px;
+    padding-right: 10px;
+  }
 }
+
+
 .orders-review-show-page {
   .vertical-middle {
     vertical-align: middle;
@@ -573,43 +628,35 @@ body {
     border-radius: 0px;
   }
 }
+
 .dropdown-submenu {
   position: relative;
-  & > .dropdown-menu {
-    top: 0;
-    left: 100%;
-    margin-top: -6px;
-    margin-left: -1px;
-    border-radius: 0 6px 6px 6px;
+}
+
+.dropdown-submenu a::after {
+  transform: rotate(-90deg);
+  position: absolute;
+  right: 3px;
+  top: 40%;
+}
+
+.dropdown-submenu:hover > .dropdown-menu, .dropdown-submenu:focus > .dropdown-menu {
+  display: flex;
+  flex-direction: column;
+  position: absolute !important;
+  margin-top: -30px;
+  left: 100%;
+}
+
+@media (max-width: 992px) {
+  .dropdown-menu {
+    width: 50%;
   }
-  &:hover > .dropdown-menu {
-    display: block;
-  }
-  & > a:after {
-    display: block;
-    content: " ";
-    float: right;
-    width: 0;
-    height: 0;
-    border-color: transparent;
-    border-style: solid;
-    border-width: 5px 0 5px 5px;
-    border-left-color: #ccc;
-    margin-top: 5px;
-    margin-right: -10px;
-  }
-  &:hover > a:after {
-    border-left-color: #fff;
-  }
-  &.pull-left {
-    float: none;
-    & > .dropdown-menu {
-      left: -100%;
-      margin-left: 10px;
-      border-radius: 6px 0 6px 6px;
-    }
+  .dropdown-menu .dropdown-submenu {
+    width: auto;
   }
 }
+
 .installments-show-page {
   font-size: 12px;
   .table {
