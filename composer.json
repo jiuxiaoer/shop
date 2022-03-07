@@ -20,7 +20,7 @@
         "laravel/framework": "^8.65",
         "laravel/sanctum": "^2.11",
         "laravel/tinker": "^2.5",
-        "laravel/ui": "3.0",
+        "laravel/ui": "^3.45",
         "moontoast/math": "^1.2",
         "overtrue/laravel-lang": "^5.0",
         "spatie/laravel-pjax": "^2.2",
