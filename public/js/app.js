@@ -2073,15 +2073,17 @@ __webpack_require__(/*! ./layer */ "./resources/js/layer.js");
 
 __webpack_require__(/*! ./pjax */ "./resources/js/pjax.js");
 
-window.Vue = (__webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm.js")["default"]); // 此处需在引入 Vue 之后引入
+window.onload = function () {
+  window.Vue = (__webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm.js")["default"]); // 此处需在引入 Vue 之后引入
 
-__webpack_require__(/*! ./components/SelectDistrict */ "./resources/js/components/SelectDistrict.js");
+  __webpack_require__(/*! ./components/SelectDistrict */ "./resources/js/components/SelectDistrict.js");
 
-__webpack_require__(/*! ./components/UserAddressesCreateAndEdit */ "./resources/js/components/UserAddressesCreateAndEdit.js");
+  __webpack_require__(/*! ./components/UserAddressesCreateAndEdit */ "./resources/js/components/UserAddressesCreateAndEdit.js");
 
-var app = new Vue({
-  el: '#app'
-});
+  var app = new Vue({
+    el: '#app'
+  });
+};
 
 /***/ }),
 
@@ -3945,7 +3947,8 @@ $(document).on('pjax:click', function () {
 }); //隐藏加载动画
 
 $(document).on('pjax:end', function () {
-  $.getScript("js/app.js");
+  // //todo 临时解决
+  // $.getScript(window.location.protocol+"//"+window.location.host+"/js/app.js");
   layer.close(index);
   layer.msg('加载成功');
 });
