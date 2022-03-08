@@ -185,6 +185,14 @@ class AdminTablesSeeder extends Seeder
                     "icon" => "fa-envira",
                     "uri" => "/crowdfunding_products",
                     "permission" => NULL
+                ],
+                [
+                    "parent_id" => 9,
+                    "order" => 0,
+                    "title" => "秒杀商品",
+                    "icon" => "fa-bars",
+                    "uri" => "/seckill_products",
+                    "permission" => NULL
                 ]
             ]
         );
